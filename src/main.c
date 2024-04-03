@@ -9,11 +9,11 @@ void handle_input(Player *p);
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Vampire Survivors 2");
     SetTargetFPS(60);
-    Vector2 pp = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
-    Vector2 ps = {50, 50};
-    Player *p = player_create(pp, ps);
+    Vector2 mid = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
+    Player *p = player_create(mid);
     while (!WindowShouldClose()) {
         player_update(p);
+
         BeginDrawing();
             ClearBackground(RAYWHITE);
             player_draw(p);
