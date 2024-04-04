@@ -7,7 +7,7 @@
 void handle_input(Player *p);
 
 int main() {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Vampire Survivors 2");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tank Survival");
     SetTargetFPS(60);
     Vector2 mid = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
     Player *p = player_create(mid);
@@ -20,6 +20,6 @@ int main() {
         EndDrawing();
     }
     CloseWindow();
-    player_free(p);
+    player_delete(p);
     return 0;
 }
