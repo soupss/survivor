@@ -2,11 +2,15 @@
 #define PLAYER_H
 
 #include <raylib.h>
+#include "bullet.h"
+#include "list.h"
 
 typedef struct Player Player;
-Player* player_create(Vector2 pos);
-void player_update(Player *p);
+Player *player_create(Vector2 pos);
+void player_destroy(Player *p);
+void player_set_target_dir(Player *p, Vector2 dir);
+void player_move(Player *p);
+void player_shoot(Player *p, List *bs);
 void player_draw(Player *p);
-void player_delete(Player *p);
 
 #endif
