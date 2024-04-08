@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "player.h"
 #include <raymath.h>
 #include "runtime_constants.h"
 
-#define PLAYER_TURN_SPEED 0.15
+#define PLAYER_TURN_SPEED 0.12
 #define PLAYER_COLOR GREEN
 #define PLAYER_SHOT_DELAY 10
 
@@ -39,18 +40,23 @@ void player_set_target_dir(Player *p, Vector2 dir) {
 
 void player_move(Player *p) {
     if (Vector2Length(p->target_dir) > 0) {
-        Vector2 dir_normal = {p->dir.y, -p->dir.x};
-        float rotation = Vector2DotProduct(dir_normal, p->target_dir);
-        if (rotation > 0) p->dir = Vector2Rotate(p->dir, -PLAYER_TURN_SPEED);
-        else p->dir = Vector2Rotate(p->dir, PLAYER_TURN_SPEED);
-        //TODO: make dir converge fully with target dir
+        Vector2 normal = {p->dir.y, -p->dir.x};
+        double angle = PLAYER_TURN_SPEED;
+        float d = Vector2DotProduct(normal, p->target_dir);
+        if (d > 0) angle *= -1;
+        double angle_to_target = Vector2Angle(p->dir, p->target_dir);
+        if (fabs(angle_to_target) < fabs(angle)) {
+            p->dir = Vector2Rotate(p->dir, angle_to_target);
+        } else {
+            p->dir = Vector2Rotate(p->dir, angle);
+        }
         p->pos = Vector2Add(p->pos, p->dir);
     }
 }
 
 void player_shoot(Player *p, List *bs) {
     if (p->shot_delta >= PLAYER_SHOT_DELAY) {
-        Vector2 barrel_end = Vector2Add(p->pos, Vector2Scale(p->dir, p->radius + BARREL_LENGTH - 6));
+        Vector2 barrel_end = Vector2Add(p->pos, Vector2Scale(p->dir, p->radius + BARREL_LENGTH - BULLET_RADIUS * 2 - (double)BARREL_LENGTH/20));
         Bullet *b = bullet_create(barrel_end, p->dir);
         list_insert(bs, b);
         p->shot_delta = 0;
@@ -60,7 +66,7 @@ void player_shoot(Player *p, List *bs) {
 
 void player_draw(Player *p) {
     DrawCircleV(p->pos, p->radius, PLAYER_COLOR);
-    Vector2 barrel_pos = Vector2Add(p->pos, Vector2Scale(p->dir, p->radius + BARREL_LENGTH/2 - 2));
+    Vector2 barrel_pos = Vector2Add(p->pos, Vector2Scale(p->dir, p->radius + BARREL_LENGTH/2 - (double)BARREL_LENGTH/20));
     float barrel_rotation = -RAD2DEG * Vector2Angle(p->dir, (Vector2){0, -1});
     DrawRectanglePro(
             (Rectangle){barrel_pos.x, barrel_pos.y, BARREL_WIDTH, BARREL_LENGTH},
