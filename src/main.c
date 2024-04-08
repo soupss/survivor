@@ -47,7 +47,9 @@ void update(Player *p, List *bs) {
     player_move(p);
     player_shoot(p, bs);
     for (int i = 0; i < list_len(bs); i++) {
-        bullet_update(list_get(bs, i));
+        Bullet *b = list_get(bs, i);
+        if (bullet_out_of_bounds(b)) bullet_destroy(list_delete(bs, i));
+        else bullet_update(b);
     }
 }
 
@@ -67,5 +69,5 @@ void handle_input(Player *p) {
     if (IsKeyDown(KEY_DOWN)) dir.y += 1;
     if (IsKeyDown(KEY_LEFT)) dir.x -= 1;
     if (IsKeyDown(KEY_RIGHT)) dir.x += 1;
-    player_set_target_dir(p, dir);
+    player_set_dir_target(p, dir);
 }

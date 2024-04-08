@@ -8,7 +8,7 @@
 typedef struct Player Player;
 Player *player_create(Vector2 pos);
 void player_destroy(Player *p);
-void player_set_target_dir(Player *p, Vector2 dir);
+void player_set_dir_target(Player *p, Vector2 dir);
 void player_move(Player *p);
 void player_shoot(Player *p, List *bs);
 void player_draw(Player *p);

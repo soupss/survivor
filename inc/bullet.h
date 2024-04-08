@@ -8,5 +8,6 @@ Bullet* bullet_create(Vector2 pos, Vector2 dir);
 void bullet_destroy(Bullet *b);
 void bullet_update(Bullet *b);
 void bullet_draw(Bullet *b);
+bool bullet_out_of_bounds(Bullet *b);
 
 #endif

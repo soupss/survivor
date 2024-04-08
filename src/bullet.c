@@ -5,6 +5,7 @@
 #include "runtime_constants.h"
 
 #define BULLET_COLOR DARKGRAY
+#define BULLET_SPEED 8
 
 struct Bullet {
     Vector2 pos;
@@ -29,10 +30,17 @@ void bullet_destroy(Bullet *b) {
 }
 
 void bullet_update(Bullet *b) {
-    b->pos = Vector2Add(b->pos, Vector2Scale(b->dir, 3));
-    //TODO: free bullets that are out of screen
+    b->pos = Vector2Add(b->pos, Vector2Scale(b->dir, BULLET_SPEED));
 }
 
 void bullet_draw(Bullet *b) {
     DrawCircleV(b->pos, b->radius, BULLET_COLOR);
+}
+
+bool bullet_out_of_bounds(Bullet *b) {
+    if (b->pos.x < 0 - b->radius ||
+        b->pos.x > SCREEN_WIDTH + b->radius ||
+        b->pos.y < 0 - b->radius ||
+        b->pos.y > SCREEN_HEIGHT + b->radius) return true;
+    else return false;
 }
