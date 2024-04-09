@@ -3,7 +3,7 @@
 
 typedef struct List List;
 List *list_create(int cap);
-void list_destroy(List *l);
+void list_free(List *l);
 void *list_get(List *l, int i);
 int list_len(List *l);
 void list_insert(List *l, void *el);

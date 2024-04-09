@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "list.h"
+#include "util.h"
 
 struct List {
     int len;
@@ -9,23 +10,16 @@ struct List {
 };
 
 List *list_create(int cap) {
-    List *l = (List*)malloc(sizeof(List));
-    if (l == NULL) {
-        printf("Memory allocation failed\n");
-        exit(-1);
-    }
+    List *l = malloc(sizeof(List));
+    check_alloc(l);
     l->arr = malloc(cap * sizeof(void*));
-    if (l->arr == NULL) {
-        printf("Memory allocation failed\n");
-        free(l);
-        exit(-1);
-    }
+    check_alloc(l->arr);
     l->len = 0;
     l->cap = cap;
     return l;
 }
 
-void list_destroy(List *l) {
+void list_free(List *l) {
     for (int i = 0; i < l->len; i++) free(l->arr[i]);
     free(l->arr);
     free(l);
@@ -39,10 +33,7 @@ void list_insert(List *l, void *el) {
     if (l->len == l->cap) {
         l->cap *= 2;
         l->arr = realloc(l->arr, l->cap * sizeof(void*));
-        if (l->arr == NULL) {
-            printf("Memory allocation failed\n");
-            exit(-1);
-        }
+        check_alloc(l->arr);
     }
     l->arr[l->len] = el;
     l->len++;
