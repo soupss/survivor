@@ -3,7 +3,7 @@
 
 extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;
-extern int PLAYER_RADIUS;
+extern int TANK_RADIUS;
 extern int MOB_RADIUS;
 extern int BULLET_RADIUS;
 extern int BARREL_WIDTH;

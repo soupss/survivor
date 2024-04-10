@@ -34,6 +34,6 @@ void mob_update(Mob *m, Vector2 target) {
 }
 
 void mob_draw(Mob *m) {
-    double angle = RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
+    double angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
     DrawPoly(m->pos, 3, m->radius, angle, MOB_COLOR);
 }
