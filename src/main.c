@@ -41,8 +41,7 @@ void initialize(Tank **t, List **bs, List **ms) {
     init_constants(GetScreenWidth(), GetScreenHeight());
     SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     SetTargetFPS(60);
-    Vector2 mid = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
-    *t = tank_create(mid);
+    *t = tank_create(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
     *bs = list_create(MAX_BULLETS_INITIAL);
     *ms = list_create(MAX_MOBS_INITIAL);
 }
@@ -56,8 +55,6 @@ void terminate(Tank *t, List *bs, List *ms) {
 
 void update(Tank *t, List *bs, List *ms) {
     handle_input(t);
-    tank_move(t);
-    tank_shoot(t, bs);
     for (int i = 0; i < list_len(bs); i++) {
         Bullet *b = list_get(bs, i);
         if (bullet_out_of_bounds(b)) bullet_free(list_delete(bs, i));
@@ -74,20 +71,29 @@ void draw(Tank *t, List *bs, List *ms) {
     for (int i = 0; i < list_len(bs); i++) {
         bullet_draw(list_get(bs, i));
     }
-    for (int i = 0; i < list_len(ms); i++) {
-        mob_draw(list_get(ms, i));
-    }
+    // for (int i = 0; i < list_len(ms); i++) {
+    //     mob_draw(list_get(ms, i));
+    // }
     tank_draw(t);
     EndDrawing();
 }
 
 void handle_input(Tank *t) {
-    Vector2 dir = {0};
-    if (IsKeyDown(KEY_UP)) dir.y -= 1;
-    if (IsKeyDown(KEY_DOWN)) dir.y += 1;
-    if (IsKeyDown(KEY_LEFT)) dir.x -= 1;
-    if (IsKeyDown(KEY_RIGHT)) dir.x += 1;
-    tank_set_dir_target(t, dir);
+    bool hull_rotating = false;
+    if (IsKeyDown(KEY_D)) {
+        tank_rotate(t, 1);
+        hull_rotating = true;
+    }
+    if (IsKeyDown(KEY_A)) {
+        tank_rotate(t, -1);
+        hull_rotating = true;
+    }
+    if (!hull_rotating){
+        if (IsKeyDown(KEY_W)) tank_move(t, 1);
+        else if (IsKeyDown(KEY_S)) tank_move(t, -1);
+    }
+    if (IsKeyDown(KEY_RIGHT)) tank_turret_rotate(t, 1);
+    if (IsKeyDown(KEY_LEFT)) tank_turret_rotate(t, -1);
 }
 
 void spawn_mob(List *ms, Vector2 pos) {
