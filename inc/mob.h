@@ -9,5 +9,7 @@ void mob_free(Mob *m);
 void mob_update(Mob *m, Vector2 target);
 void mob_draw(Mob *m);
 Vector2 mob_get_pos(Mob *m);
+bool mob_is_dead(Mob *m);
+void mob_reduce_hp(Mob *m, int hp);
 
 #endif

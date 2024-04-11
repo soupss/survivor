@@ -10,15 +10,17 @@
 
 #define MAX_BULLETS_INITIAL 5
 #define MAX_MOBS_INITIAL 5
-#define MOB_SPAWN_DELAY 150
+#define MOB_SPAWN_DELAY 200
+#define TANK_BULLET_DAMAGE 4
 
 void initialize(Tank **t, List **bs, List **ms);
-void terminate(Tank *t, List *bs, List *ms);
 void update(Tank *t, List *bs, List *ms);
 void draw(Tank *t, List *bs, List *ms);
+void terminate(Tank *t, List *bs, List *ms);
 void handle_input(Tank *t);
-void spawn_mob(List *ms);
-void handle_collisions_bullet_mob(List *bs, List *ms);
+void spawn_mobs(List *ms);
+void handle_collision_mob_bullet(List *bs, List *ms);
+bool handle_collision_mob_tank(List *ms, Tank *t);
 
 int main() {
     Tank *t;
@@ -26,7 +28,6 @@ int main() {
     List *ms;   // mobs
     initialize(&t, &bs, &ms);
     while (!WindowShouldClose()) {
-        spawn_mob(ms);
         update(t, bs, ms);
         draw(t, bs, ms);
     }
@@ -46,6 +47,36 @@ void initialize(Tank **t, List **bs, List **ms) {
     *ms = list_create(MAX_MOBS_INITIAL);
 }
 
+void update(Tank *t, List *bs, List *ms) {
+    handle_input(t);
+    tank_shoot(t, bs);
+    spawn_mobs(ms);
+    for (int i = 0; i < list_len(bs); i++) {
+        Bullet *b = list_get(bs, i);
+        if (bullet_out_of_bounds(b)) bullet_free(list_delete(bs, i));
+        else bullet_update(b);
+    }
+    for (int i = 0; i < list_len(ms); i++) {
+        Mob *m = list_get(ms, i);
+        if (mob_is_dead(m)) mob_free(list_delete(ms, i));
+        else mob_update(list_get(ms, i), tank_get_pos(t));
+    }
+    handle_collision_mob_bullet(bs, ms);
+}
+
+void draw(Tank *t, List *bs, List *ms) {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    for (int i = 0; i < list_len(ms); i++) {
+        mob_draw(list_get(ms, i));
+    }
+    for (int i = 0; i < list_len(bs); i++) {
+        bullet_draw(list_get(bs, i));
+    }
+    tank_draw(t);
+    EndDrawing();
+}
+
 void terminate(Tank *t, List *bs, List *ms) {
     CloseWindow();
     tank_free(t);
@@ -53,35 +84,9 @@ void terminate(Tank *t, List *bs, List *ms) {
     list_free(ms);
 }
 
-void update(Tank *t, List *bs, List *ms) {
-    handle_input(t);
-    tank_shoot(t, bs);
-    handle_collisions_bullet_mob(bs, ms);
-    for (int i = 0; i < list_len(bs); i++) {
-        Bullet *b = list_get(bs, i);
-        if (bullet_out_of_bounds(b)) bullet_free(list_delete(bs, i));
-        else bullet_update(b);
-    }
-    for (int i = 0; i < list_len(ms); i++) {
-        mob_update(list_get(ms, i), tank_get_pos(t));
-    }
-}
-
-void draw(Tank *t, List *bs, List *ms) {
-    BeginDrawing();
-    ClearBackground(RAYWHITE);
-    for (int i = 0; i < list_len(bs); i++) {
-        bullet_draw(list_get(bs, i));
-    }
-    for (int i = 0; i < list_len(ms); i++) {
-        mob_draw(list_get(ms, i));
-    }
-    tank_draw(t);
-    EndDrawing();
-}
-
 void handle_input(Tank *t) {
     bool hull_rotating = false;
+    bool turret_rotating_cont = false;
     if (IsKeyDown(KEY_D)) {
         tank_hull_rotate(t, 1);
         hull_rotating = true;
@@ -94,11 +99,18 @@ void handle_input(Tank *t) {
         if (IsKeyDown(KEY_W)) tank_move(t, 1);
         else if (IsKeyDown(KEY_S)) tank_move(t, -1);
     }
-    if (IsKeyDown(KEY_RIGHT)) tank_turret_rotate(t, 1);
-    if (IsKeyDown(KEY_LEFT)) tank_turret_rotate(t, -1);
+    if (IsKeyDown(KEY_RIGHT)) {
+        tank_turret_rotate(t, 1);
+        turret_rotating_cont = true;
+    }
+    if (IsKeyDown(KEY_LEFT)) {
+        tank_turret_rotate(t, -1);
+        turret_rotating_cont = true;
+    }
+    if (!turret_rotating_cont) tank_turret_rotate(t, 0);
 }
 
-void spawn_mob(List *ms) {
+void spawn_mobs(List *ms) {
     static int spawn_delta = 0;
     if (spawn_delta >= MOB_SPAWN_DELAY) {
         Vector2 pos = {rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
@@ -123,15 +135,15 @@ void spawn_mob(List *ms) {
     else spawn_delta++;
 }
 
-void handle_collisions_bullet_mob(List *bs, List *ms) {
+void handle_collision_mob_bullet(List *bs, List *ms) {
     //TODO: precise collision
-    for (int i = 0; i < list_len(bs); i++) {
-        for (int y = 0; y < list_len(ms); y++) {
-            Bullet *b = list_get(bs, i);
-            Mob *m = list_get(ms, y);
-            if (CheckCollisionCircles(bullet_get_pos(b), BULLET_RADIUS, mob_get_pos(m), MOB_RADIUS * 0.8)) {
-                bullet_free(list_delete(bs, i));
-                mob_free(list_delete(ms, y));
+    for (int i = 0; i < list_len(ms); i++) {
+        for (int y = 0; y < list_len(bs); y++) {
+            Mob *m = list_get(ms, i);
+            Bullet *b = list_get(bs, y);
+            if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS * 0.8, bullet_get_pos(b), BULLET_RADIUS)) {
+                mob_reduce_hp(m, TANK_BULLET_DAMAGE);
+                bullet_free(list_delete(bs, y));
                 i--;
                 y--;
                 break;

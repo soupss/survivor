@@ -4,14 +4,15 @@
 #include <raymath.h>
 #include "util.h"
 
-#define MOB_SPEED_INITIAL 1
+#define MOB_MOVE_SPEED 1.2
 #define MOB_COLOR RED
+#define MOB_MAX_HP 10
 
 struct Mob {
     Vector2 pos;
     float radius;
     Vector2 dir;
-    float speed;
+    int hit_points;
 };
 
 Mob *mob_create(Vector2 pos) {
@@ -20,18 +21,19 @@ Mob *mob_create(Vector2 pos) {
     m->pos = pos;
     m->radius = MOB_RADIUS;
     m->dir = (Vector2){0, -1};
-    m->speed = MOB_SPEED_INITIAL;
+    m->hit_points = MOB_MAX_HP;
     return m;
 }
 
 void mob_free(Mob *m) {
+    //TODO: explosion
     free(m);
 }
 
 void mob_update(Mob *m, Vector2 target) {
     //TODO: rotate instead of snap
     m->dir = Vector2Normalize(Vector2Subtract(target, m->pos));
-    m->pos = Vector2Add(m->pos ,Vector2Scale(m->dir, m->speed));
+    m->pos = Vector2Add(m->pos ,Vector2Scale(m->dir, MOB_MOVE_SPEED));
 }
 
 void mob_draw(Mob *m) {
@@ -41,4 +43,13 @@ void mob_draw(Mob *m) {
 
 Vector2 mob_get_pos(Mob *m) {
     return m->pos;
+}
+
+bool mob_is_dead(Mob *m) {
+    if (m->hit_points <= 0) return true;
+    else return false;
+}
+
+void mob_reduce_hp(Mob *m, int hp) {
+    m->hit_points -= hp;
 }

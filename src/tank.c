@@ -5,21 +5,22 @@
 #include <raymath.h>
 #include "util.h"
 
-#define TANK_HULL_COLOR DARKGREEN
+#define TANK_MOVE_SPEED 2.0
+#define TANK_SHOT_DELAY 60
 #define TANK_HULL_ROTATION_SPEED 0.08
+#define TANK_TURRET_ROTATION_SPEED 0.1
+#define TANK_TURRET_WINDUP_SPEED 0.08
+#define TANK_TURRET_WINDDOWN_SPEED 0.12
 //TODO: prettier colors (not just tank colors)
+#define TANK_HULL_COLOR DARKGREEN
 #define TANK_TRACK_COLOR DARKGRAY
 #define TANK_TURRET_COLOR GREEN
-#define TANK_TURRET_ROTATION_SPEED 0.1
-#define TANK_SHOT_DELAY 60
-#define TANK_SPEED_INITIAL 2.0
 
 struct Tank {
     Rectangle hull_rec;
     Vector2 hull_dir;
     float turret_radius;
     Vector2 turret_dir;
-    float speed;
 };
 
 Tank *tank_create(int x, int y) {
@@ -29,17 +30,18 @@ Tank *tank_create(int x, int y) {
     t->hull_dir = (Vector2){0, 1};
     t->turret_radius = TANK_TURRET_RADIUS;
     t->turret_dir = (Vector2){0, 1};
-    t->speed = TANK_SPEED_INITIAL;
     return t;
 }
 
 void tank_free(Tank *t) {
+    //TODO: explosion
     free(t);
 }
 
 void tank_move(Tank *t, int dir) {
-    t->hull_rec.x += dir * t->speed * t->hull_dir.x;
-    t->hull_rec.y += dir * t->speed * t->hull_dir.y;
+    //TODO: smooth movement
+    t->hull_rec.x += dir * TANK_MOVE_SPEED * t->hull_dir.x;
+    t->hull_rec.y += dir * TANK_MOVE_SPEED * t->hull_dir.y;
 }
 
 void tank_hull_rotate(Tank *t, int dir) {
@@ -47,8 +49,28 @@ void tank_hull_rotate(Tank *t, int dir) {
 }
 
 void tank_turret_rotate(Tank *t, int dir) {
-    //TODO: smooth rotate
-    t->turret_dir = Vector2Rotate(t->turret_dir, dir * TANK_TURRET_ROTATION_SPEED);
+    static int dir_curr = 0;
+    static float windup = 0;
+    if (dir != 0 && dir != dir_curr) {
+        windup = 0;
+        dir_curr = dir;
+    }
+    if (dir != 0 && windup < 1.0) {
+        windup += TANK_TURRET_WINDUP_SPEED;
+        if (windup > 1.0) {
+            windup = 1.0;
+        }
+    }
+    else if (dir == 0 && windup > 0.0) {
+        windup -= TANK_TURRET_WINDDOWN_SPEED;
+        if (windup < 0) {
+            windup = 0;
+            dir_curr = 0;
+        }
+    }
+    if (windup > 0.0) {
+        t->turret_dir = Vector2Rotate(t->turret_dir, windup * dir_curr * TANK_TURRET_ROTATION_SPEED);
+    }
 }
 
 void tank_shoot(Tank *t, List *bs) {
