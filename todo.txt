@@ -1,0 +1,12 @@
+* const function args
+* debug build and macro
+* port to web
+
+# game features
+
+* barrel recoil
+* sound
+* waves
+* menu
+* piercing sniper weapon
+* grenade launcher weapon

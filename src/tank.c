@@ -7,6 +7,7 @@
 
 #define TANK_HULL_COLOR DARKGREEN
 #define TANK_HULL_ROTATION_SPEED 0.08
+//TODO: prettier colors (not just tank colors)
 #define TANK_TRACK_COLOR DARKGRAY
 #define TANK_TURRET_COLOR GREEN
 #define TANK_TURRET_ROTATION_SPEED 0.1
@@ -46,6 +47,7 @@ void tank_hull_rotate(Tank *t, int dir) {
 }
 
 void tank_turret_rotate(Tank *t, int dir) {
+    //TODO: smooth rotate
     t->turret_dir = Vector2Rotate(t->turret_dir, dir * TANK_TURRET_ROTATION_SPEED);
 }
 

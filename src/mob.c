@@ -38,3 +38,7 @@ void mob_draw(Mob *m) {
     double angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
     DrawPoly(m->pos, 3, m->radius, angle, MOB_COLOR);
 }
+
+Vector2 mob_get_pos(Mob *m) {
+    return m->pos;
+}

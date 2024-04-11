@@ -8,5 +8,6 @@ Mob *mob_create(Vector2 pos);
 void mob_free(Mob *m);
 void mob_update(Mob *m, Vector2 target);
 void mob_draw(Mob *m);
+Vector2 mob_get_pos(Mob *m);
 
 #endif

@@ -5,7 +5,7 @@
 #include "util.h"
 
 #define BULLET_COLOR DARKGRAY
-#define BULLET_SPEED 8
+#define BULLET_SPEED 15
 
 struct Bullet {
     Vector2 pos;
@@ -40,4 +40,8 @@ bool bullet_out_of_bounds(Bullet *b) {
         b->pos.y < 0 - b->radius ||
         b->pos.y > SCREEN_HEIGHT + b->radius) return true;
     else return false;
+}
+
+Vector2 bullet_get_pos(Bullet *b) {
+    return b->pos;
 }
