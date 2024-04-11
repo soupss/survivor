@@ -16,10 +16,10 @@ float MOB_RADIUS;
 void init_constants(int screen_width, int screen_height) {
     SCREEN_WIDTH = screen_width;
     SCREEN_HEIGHT = screen_height;
-    TANK_HULL_WIDTH = screen_width / 40.0;
-    TANK_HULL_HEIGHT = TANK_HULL_WIDTH;
+    TANK_HULL_WIDTH = screen_width / 30.0;
+    TANK_HULL_HEIGHT = TANK_HULL_WIDTH * 1.23;
     TANK_TRACK_WIDTH = TANK_HULL_WIDTH * 0.25;
-    TANK_TURRET_RADIUS = TANK_HULL_WIDTH * 0.4;
+    TANK_TURRET_RADIUS = TANK_HULL_WIDTH * 0.3;
     BULLET_RADIUS = TANK_TURRET_RADIUS / 7.0;
     TANK_BARREL_WIDTH = BULLET_RADIUS * 2.0;
     TANK_BARREL_LENGTH = TANK_TURRET_RADIUS;
