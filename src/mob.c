@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "mob.h"
 #include <raymath.h>
 #include "util.h"
@@ -8,7 +9,7 @@
 
 struct Mob {
     Vector2 pos;
-    int radius;
+    float radius;
     Vector2 dir;
     float speed;
 };
