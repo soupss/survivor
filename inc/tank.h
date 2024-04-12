@@ -8,9 +8,9 @@
 typedef struct Tank Tank;
 Tank *tank_create(int x, int y);
 void tank_free(Tank *t);
-void tank_move(Tank *t, int dir);
-void tank_hull_rotate(Tank *t, int dir);
-void tank_turret_rotate(Tank *t, int dir);
+void tank_set_move_dir(Tank *t, int dir);
+void tank_hull_set_rot_dir(Tank *t, int dir);
+void tank_turret_set_rot_dir(Tank *t, int dir);
 void tank_shoot(Tank *t, List *bs);
 void tank_draw(Tank *t);
 Vector2 tank_get_pos(Tank *t);

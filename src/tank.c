@@ -5,12 +5,16 @@
 #include <raymath.h>
 #include "util.h"
 
-#define TANK_MOVE_SPEED 2.0
+#define TANK_MOVE_SPEED 5.0
+#define TANK_MOVE_ACC 0.03
+#define TANK_MOVE_DEC 0.03
 #define TANK_SHOT_DELAY 60
-#define TANK_HULL_ROTATION_SPEED 0.08
-#define TANK_TURRET_ROTATION_SPEED 0.1
-#define TANK_TURRET_WINDUP_SPEED 0.08
-#define TANK_TURRET_WINDDOWN_SPEED 0.12
+#define TANK_HULL_ROT_SPEED 0.08
+#define TANK_HULL_ROT_ACC 0.08
+#define TANK_HULL_ROT_DEC 0.16
+#define TANK_TURRET_ROT_SPEED 0.1
+#define TANK_TURRET_ROT_ACC 0.08
+#define TANK_TURRET_ROT_DEC 0.12
 //TODO: prettier colors (not just tank colors)
 #define TANK_HULL_COLOR DARKGREEN
 #define TANK_TRACK_COLOR DARKGRAY
@@ -38,38 +42,96 @@ void tank_free(Tank *t) {
     free(t);
 }
 
-void tank_move(Tank *t, int dir) {
-    //TODO: smooth movement
-    t->hull_rec.x += dir * TANK_MOVE_SPEED * t->hull_dir.x;
-    t->hull_rec.y += dir * TANK_MOVE_SPEED * t->hull_dir.y;
-}
-
-void tank_hull_rotate(Tank *t, int dir) {
-    t->hull_dir = Vector2Rotate(t->hull_dir, dir * TANK_HULL_ROTATION_SPEED);
-}
-
-void tank_turret_rotate(Tank *t, int dir) {
+void tank_set_move_dir(Tank *t, int dir) {
     static int dir_curr = 0;
-    static float windup = 0;
-    if (dir != 0 && dir != dir_curr) {
-        windup = 0;
-        dir_curr = dir;
-    }
-    if (dir != 0 && windup < 1.0) {
-        windup += TANK_TURRET_WINDUP_SPEED;
-        if (windup > 1.0) {
-            windup = 1.0;
+    static float momentum = 0.0;
+    static Vector2 hull_dir_last = {0.0};
+    if (dir != 0) hull_dir_last = t->hull_dir;
+    // change direction
+    if (dir != dir_curr && momentum > 0.0) {
+        if (dir != 0) momentum -= (TANK_MOVE_DEC + TANK_MOVE_ACC);
+        else momentum -= TANK_MOVE_DEC;
+        if (momentum < 0.0) {
+            momentum = 0.0;
+            dir_curr = dir;
         }
     }
-    else if (dir == 0 && windup > 0.0) {
-        windup -= TANK_TURRET_WINDDOWN_SPEED;
-        if (windup < 0) {
-            windup = 0;
+    else {
+        // accelerate
+        if (dir != 0 && momentum < 1.0) {
+            momentum += TANK_MOVE_ACC;
+            if (momentum > 1.0) momentum = 1.0;
+        }
+        // stop
+        else if (dir == 0 && momentum > 0.0) {
+            momentum -= TANK_MOVE_DEC;
+            if (momentum < 0.0) {
+                momentum = 0.0;
+                dir_curr = 0;
+            }
+        }
+    }
+    if (momentum > 0) {
+        t->hull_rec.x += momentum * dir_curr * TANK_MOVE_SPEED * hull_dir_last.x;
+        t->hull_rec.y += momentum * dir_curr * TANK_MOVE_SPEED * hull_dir_last.y;
+    }
+}
+
+void tank_hull_set_rot_dir(Tank *t, int dir) {
+    static int dir_curr = 0;
+    static float momentum = 0;
+    if (dir != dir_curr) {
+        if (momentum > 0.0) {
+            momentum -= TANK_HULL_ROT_DEC + TANK_HULL_ROT_ACC;
+            if (momentum < 0) {
+                momentum = 0;
+                dir_curr = dir;
+            }
+        }
+        else dir_curr = dir;
+    }
+    else {
+        if (dir != 0 && momentum < 1.0) {
+            momentum += TANK_HULL_ROT_ACC;
+            if (momentum > 1.0) {
+                momentum = 1.0;
+            }
+        }
+        else if (dir == 0 && momentum > 0.0) {
+            momentum -= TANK_HULL_ROT_DEC;
+            if (momentum < 0) {
+                momentum = 0;
+                dir_curr = 0;
+            }
+        }
+    }
+    if (momentum > 0.0) {
+        t->hull_dir = Vector2Rotate(t->hull_dir, momentum * dir_curr * TANK_HULL_ROT_SPEED);
+    }
+}
+
+void tank_turret_set_rot_dir(Tank *t, int dir) {
+    static int dir_curr = 0;
+    static float momentum = 0;
+    if (dir != 0 && dir != dir_curr) {
+        momentum = 0;
+        dir_curr = dir;
+    }
+    if (dir != 0 && momentum < 1.0) {
+        momentum += TANK_TURRET_ROT_ACC;
+        if (momentum > 1.0) {
+            momentum = 1.0;
+        }
+    }
+    else if (dir == 0 && momentum > 0.0) {
+        momentum -= TANK_TURRET_ROT_DEC;
+        if (momentum < 0) {
+            momentum = 0;
             dir_curr = 0;
         }
     }
-    if (windup > 0.0) {
-        t->turret_dir = Vector2Rotate(t->turret_dir, windup * dir_curr * TANK_TURRET_ROTATION_SPEED);
+    if (momentum > 0.0) {
+        t->turret_dir = Vector2Rotate(t->turret_dir, momentum * dir_curr * TANK_TURRET_ROT_SPEED);
     }
 }
 
