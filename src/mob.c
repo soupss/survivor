@@ -32,12 +32,13 @@ void mob_free(Mob *m) {
 
 void mob_update(Mob *m, Vector2 target) {
     //TODO: rotate instead of snap
+    //TODO: handle collision between mobs
     m->dir = Vector2Normalize(Vector2Subtract(target, m->pos));
     m->pos = Vector2Add(m->pos ,Vector2Scale(m->dir, MOB_MOVE_SPEED));
 }
 
 void mob_draw(Mob *m) {
-    double angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
+    float angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
     DrawPoly(m->pos, 3, m->radius, angle, MOB_COLOR);
 }
 
@@ -46,8 +47,10 @@ Vector2 mob_get_pos(Mob *m) {
 }
 
 bool mob_is_dead(Mob *m) {
-    if (m->hit_points <= 0) return true;
-    else return false;
+    if (m->hit_points <= 0)
+        return true;
+    else
+        return false;
 }
 
 void mob_reduce_hp(Mob *m, int hp) {

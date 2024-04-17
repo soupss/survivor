@@ -8,14 +8,14 @@
 #define TANK_MOVE_SPEED 5.0
 #define TANK_MOVE_ACC 0.03
 #define TANK_MOVE_DEC 0.03
-#define TANK_SHOT_DELAY 60
+#define TANK_VEL_STAB_RATE 0.2
 #define TANK_HULL_ROT_SPEED 0.08
 #define TANK_HULL_ROT_ACC 0.08
 #define TANK_HULL_ROT_DEC 0.16
 #define TANK_TURRET_ROT_SPEED 0.1
 #define TANK_TURRET_ROT_ACC 0.08
 #define TANK_TURRET_ROT_DEC 0.12
-//TODO: prettier colors (not just tank colors)
+#define TANK_SHOT_DELAY 60
 #define TANK_HULL_COLOR DARKGREEN
 #define TANK_TRACK_COLOR DARKGRAY
 #define TANK_TURRET_COLOR GREEN
@@ -23,6 +23,7 @@
 struct Tank {
     Rectangle hull_rec;
     Vector2 hull_dir;
+    Vector2 velocity;
     float turret_radius;
     Vector2 turret_dir;
 };
@@ -32,6 +33,7 @@ Tank *tank_create(int x, int y) {
     check_alloc(t);
     t->hull_rec = (Rectangle){x, y, TANK_HULL_WIDTH, TANK_HULL_HEIGHT};
     t->hull_dir = (Vector2){0, 1};
+    t->velocity = (Vector2){0};
     t->turret_radius = TANK_TURRET_RADIUS;
     t->turret_dir = (Vector2){0, 1};
     return t;
@@ -42,42 +44,56 @@ void tank_free(Tank *t) {
     free(t);
 }
 
-void tank_set_move_dir(Tank *t, int dir) {
-    static int dir_curr = 0;
-    static float momentum = 0.0;
-    static Vector2 hull_dir_last = {0.0};
-    if (dir != 0) hull_dir_last = t->hull_dir;
-    // change direction
-    if (dir != dir_curr && momentum > 0.0) {
-        if (dir != 0) momentum -= (TANK_MOVE_DEC + TANK_MOVE_ACC);
-        else momentum -= TANK_MOVE_DEC;
-        if (momentum < 0.0) {
-            momentum = 0.0;
-            dir_curr = dir;
-        }
-    }
-    else {
-        // accelerate
-        if (dir != 0 && momentum < 1.0) {
-            momentum += TANK_MOVE_ACC;
-            if (momentum > 1.0) momentum = 1.0;
-        }
-        // stop
-        else if (dir == 0 && momentum > 0.0) {
-            momentum -= TANK_MOVE_DEC;
-            if (momentum < 0.0) {
-                momentum = 0.0;
-                dir_curr = 0;
-            }
-        }
-    }
-    if (momentum > 0) {
-        t->hull_rec.x += momentum * dir_curr * TANK_MOVE_SPEED * hull_dir_last.x;
-        t->hull_rec.y += momentum * dir_curr * TANK_MOVE_SPEED * hull_dir_last.y;
-    }
+void tank_update(Tank *t) {
+    t->hull_rec.x += t->velocity.x * TANK_MOVE_SPEED;
+    t->hull_rec.y += t->velocity.y * TANK_MOVE_SPEED;
 }
 
-void tank_hull_set_rot_dir(Tank *t, int dir) {
+void tank_velocity_calculate(Tank *t, int dir) {
+    int dir_vel;
+    if (Vector2Length(t->velocity) != 0){
+        float dot = Vector2DotProduct(t->velocity, t->hull_dir);
+        if (dot >= 0)
+            dir_vel = 1;
+        else if (dot < 0)
+            dir_vel = -1;
+    }
+    else
+        dir_vel = 0;
+    if (dir != 0) {
+        // start from stop
+        if (dir_vel == 0) {
+            float magnitude = TANK_MOVE_ACC;
+            float rotation = Vector2Angle(t->hull_dir, (Vector2){1, 0});
+            if (dir == -1) {
+                magnitude = TANK_MOVE_DEC;
+                rotation += PI;
+            }
+            t->velocity = Vector2Rotate((Vector2){magnitude, 0}, -rotation);
+        }
+        else {
+            // accelerate
+            if (dir_vel == dir)
+                t->velocity = Vector2AddMagnitude(t->velocity, TANK_MOVE_ACC);
+            // decelerate to change direction
+            else
+                t->velocity = Vector2SubtractMagnitude(t->velocity, TANK_MOVE_DEC + TANK_MOVE_ACC);
+        }
+    }
+    // decelerate
+    else {
+        t->velocity = Vector2SubtractMagnitude(t->velocity, TANK_MOVE_DEC);
+    }
+    t->velocity = Vector2ClampValue(t->velocity, 0.0, 1.0);
+    Vector2 dir_target = t->hull_dir;
+    if (dir_vel == -1)
+        dir_target = Vector2Rotate(dir_target, PI);
+    float diff = Vector2Angle(t->velocity, dir_target);
+    if (FloatEquals(diff, 0) == 0)
+        t->velocity = Vector2Rotate(t->velocity, TANK_VEL_STAB_RATE*diff);
+}
+
+void tank_hull_rotate(Tank *t, int dir) {
     static int dir_curr = 0;
     static float momentum = 0;
     if (dir != dir_curr) {
@@ -88,14 +104,14 @@ void tank_hull_set_rot_dir(Tank *t, int dir) {
                 dir_curr = dir;
             }
         }
-        else dir_curr = dir;
+        else
+            dir_curr = dir;
     }
     else {
         if (dir != 0 && momentum < 1.0) {
             momentum += TANK_HULL_ROT_ACC;
-            if (momentum > 1.0) {
+            if (momentum > 1.0)
                 momentum = 1.0;
-            }
         }
         else if (dir == 0 && momentum > 0.0) {
             momentum -= TANK_HULL_ROT_DEC;
@@ -105,12 +121,11 @@ void tank_hull_set_rot_dir(Tank *t, int dir) {
             }
         }
     }
-    if (momentum > 0.0) {
+    if (momentum > 0.0)
         t->hull_dir = Vector2Rotate(t->hull_dir, momentum * dir_curr * TANK_HULL_ROT_SPEED);
-    }
 }
 
-void tank_turret_set_rot_dir(Tank *t, int dir) {
+void tank_turret_rotate(Tank *t, int dir) {
     static int dir_curr = 0;
     static float momentum = 0;
     if (dir != 0 && dir != dir_curr) {
@@ -119,9 +134,8 @@ void tank_turret_set_rot_dir(Tank *t, int dir) {
     }
     if (dir != 0 && momentum < 1.0) {
         momentum += TANK_TURRET_ROT_ACC;
-        if (momentum > 1.0) {
+        if (momentum > 1.0)
             momentum = 1.0;
-        }
     }
     else if (dir == 0 && momentum > 0.0) {
         momentum -= TANK_TURRET_ROT_DEC;
@@ -130,9 +144,8 @@ void tank_turret_set_rot_dir(Tank *t, int dir) {
             dir_curr = 0;
         }
     }
-    if (momentum > 0.0) {
+    if (momentum > 0.0)
         t->turret_dir = Vector2Rotate(t->turret_dir, momentum * dir_curr * TANK_TURRET_ROT_SPEED);
-    }
 }
 
 void tank_shoot(Tank *t, List *bs) {
@@ -144,7 +157,8 @@ void tank_shoot(Tank *t, List *bs) {
         list_insert(bs, b);
         shot_delta = 0;
     }
-    else shot_delta++;
+    else
+        shot_delta++;
 }
 
 void tank_draw(Tank *t) {
@@ -161,6 +175,7 @@ void tank_draw(Tank *t) {
     Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, TANK_BARREL_LENGTH / 2};
     float turret_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
     DrawRectanglePro(barrel_rec, barrel_center, turret_rotation, TANK_TURRET_COLOR);
+    Vector2 tp = (Vector2){t->hull_rec.x, t->hull_rec.y};
 }
 
 Vector2 tank_get_pos(Tank *t) {

@@ -49,17 +49,22 @@ void initialize(Tank **t, List **bs, List **ms) {
 
 void update(Tank *t, List *bs, List *ms) {
     handle_input(t);
+    tank_update(t);
     tank_shoot(t, bs);
-    // spawn_mobs(ms);
+    spawn_mobs(ms);
     for (int i = 0; i < list_len(bs); i++) {
         Bullet *b = list_get(bs, i);
-        if (bullet_out_of_bounds(b)) bullet_free(list_delete(bs, i));
-        else bullet_update(b);
+        if (bullet_out_of_bounds(b))
+            bullet_free(list_delete(bs, i));
+        else
+            bullet_update(b);
     }
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        if (mob_is_dead(m)) mob_free(list_delete(ms, i));
-        else mob_update(list_get(ms, i), tank_get_pos(t));
+        if
+            (mob_is_dead(m)) mob_free(list_delete(ms, i));
+        else
+            mob_update(list_get(ms, i), tank_get_pos(t));
     }
     handle_collision_mob_bullet(bs, ms);
 }
@@ -67,12 +72,10 @@ void update(Tank *t, List *bs, List *ms) {
 void draw(Tank *t, List *bs, List *ms) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
-    for (int i = 0; i < list_len(ms); i++) {
+    for (int i = 0; i < list_len(ms); i++)
         mob_draw(list_get(ms, i));
-    }
-    for (int i = 0; i < list_len(bs); i++) {
+    for (int i = 0; i < list_len(bs); i++)
         bullet_draw(list_get(bs, i));
-    }
     tank_draw(t);
     EndDrawing();
 }
@@ -89,34 +92,36 @@ void handle_input(Tank *t) {
     bool turret_rotating = false;
     bool tank_moving = false;
     if (IsKeyDown(KEY_D)) {
-        tank_hull_set_rot_dir(t, 1);
+        tank_hull_rotate(t, 1);
         hull_rotating = true;
     }
     if (IsKeyDown(KEY_A)) {
-        tank_hull_set_rot_dir(t, -1);
+        tank_hull_rotate(t, -1);
         hull_rotating = true;
     }
     if (!hull_rotating){
-        tank_hull_set_rot_dir(t, 0);
+        tank_hull_rotate(t, 0);
         if (IsKeyDown(KEY_W)) {
-            tank_set_move_dir(t, 1);
+            tank_velocity_calculate(t, 1);
             tank_moving = true;
         }
         else if (IsKeyDown(KEY_S)) {
-            tank_set_move_dir(t, -1);
+            tank_velocity_calculate(t, -1);
             tank_moving = true;
         }
     }
-    if (!tank_moving) tank_set_move_dir(t, 0);
+    if (!tank_moving)
+        tank_velocity_calculate(t, 0);
     if (IsKeyDown(KEY_RIGHT)) {
-        tank_turret_set_rot_dir(t, 1);
+        tank_turret_rotate(t, 1);
         turret_rotating = true;
     }
     if (IsKeyDown(KEY_LEFT)) {
-        tank_turret_set_rot_dir(t, -1);
+        tank_turret_rotate(t, -1);
         turret_rotating = true;
     }
-    if (!turret_rotating) tank_turret_set_rot_dir(t, 0);
+    if (!turret_rotating)
+        tank_turret_rotate(t, 0);
 }
 
 void spawn_mobs(List *ms) {
@@ -141,7 +146,8 @@ void spawn_mobs(List *ms) {
         list_insert(ms, m);
         spawn_delta = 0;
     }
-    else spawn_delta++;
+    else
+        spawn_delta++;
 }
 
 void handle_collision_mob_bullet(List *bs, List *ms) {

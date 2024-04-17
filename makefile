@@ -1,4 +1,4 @@
-CC := cc
+CC := clang
 SRC_DIR := src
 INC_DIR := inc
 OBJ_DIR := obj
@@ -24,4 +24,4 @@ $(BIN_DIR) $(OBJ_DIR):
 	mkdir -p $@
 
 clean:
-	rm -f $(EXECUTABLE) $(OBJECTS)
+	rm -f $(EXECUTABLE) $(OBJ_DIR)/*

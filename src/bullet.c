@@ -39,7 +39,8 @@ bool bullet_out_of_bounds(Bullet *b) {
         b->pos.x > SCREEN_WIDTH + b->radius ||
         b->pos.y < 0 - b->radius ||
         b->pos.y > SCREEN_HEIGHT + b->radius) return true;
-    else return false;
+    else
+        return false;
 }
 
 Vector2 bullet_get_pos(Bullet *b) {
