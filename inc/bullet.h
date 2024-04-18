@@ -10,5 +10,6 @@ void bullet_update(Bullet *b);
 void bullet_draw(Bullet *b);
 bool bullet_out_of_bounds(Bullet *b);
 Vector2 bullet_get_pos(Bullet *b);
+Vector2 bullet_get_dir(Bullet *b);
 
 #endif

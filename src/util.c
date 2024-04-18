@@ -13,6 +13,10 @@ float TANK_BARREL_WIDTH;
 float TANK_BARREL_LENGTH;
 float BULLET_RADIUS;
 float MOB_RADIUS;
+float EXP_RADIUS;
+float EXP_RANGE;
+float EXPBAR_WIDTH;
+float EXPBAR_HEIGHT;
 
 void init_constants(int screen_width, int screen_height) {
     SCREEN_WIDTH = screen_width;
@@ -25,6 +29,10 @@ void init_constants(int screen_width, int screen_height) {
     TANK_BARREL_WIDTH = BULLET_RADIUS * 1.8;
     TANK_BARREL_LENGTH = TANK_TURRET_RADIUS;
     MOB_RADIUS = screen_width / 70.0;
+    EXP_RADIUS = TANK_TURRET_RADIUS / 3.0;
+    EXP_RANGE = TANK_HULL_HEIGHT * 2.5;
+    EXPBAR_WIDTH = screen_width;
+    EXPBAR_HEIGHT = screen_height / 64.0;
 }
 
 void check_alloc(void *p) {

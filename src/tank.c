@@ -64,12 +64,12 @@ void tank_velocity_calculate(Tank *t, int dir) {
         // start from stop
         if (dir_vel == 0) {
             float magnitude = TANK_MOVE_ACC;
-            float rotation = Vector2Angle(t->hull_dir, (Vector2){1, 0});
+            float angle = -Vector2Angle(t->hull_dir, (Vector2){1, 0});
             if (dir == -1) {
                 magnitude = TANK_MOVE_DEC;
-                rotation += PI;
+                angle += PI;
             }
-            t->velocity = Vector2Rotate((Vector2){magnitude, 0}, -rotation);
+            t->velocity = Vector2Rotate((Vector2){magnitude, 0}, angle);
         }
         else {
             // accelerate
@@ -84,7 +84,7 @@ void tank_velocity_calculate(Tank *t, int dir) {
     else {
         t->velocity = Vector2SubtractMagnitude(t->velocity, TANK_MOVE_DEC);
     }
-    t->velocity = Vector2ClampValue(t->velocity, 0.0, 1.0);
+    t->velocity = Vector2ClampValue(t->velocity, 0, 1);
     Vector2 dir_target = t->hull_dir;
     if (dir_vel == -1)
         dir_target = Vector2Rotate(dir_target, PI);

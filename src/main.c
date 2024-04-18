@@ -2,6 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <raylib.h>
+#include <raymath.h>
 #include "tank.h"
 #include "bullet.h"
 #include "mob.h"
@@ -10,32 +11,37 @@
 
 #define MAX_BULLETS_INITIAL 5
 #define MAX_MOBS_INITIAL 5
+#define MAX_EXPS_INITIAL 5
 #define MOB_SPAWN_DELAY 200
 #define TANK_BULLET_DAMAGE 4
+#define EXP_MAX 15
 
-void initialize(Tank **t, List **bs, List **ms);
-void update(Tank *t, List *bs, List *ms);
-void draw(Tank *t, List *bs, List *ms);
-void terminate(Tank *t, List *bs, List *ms);
+void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp);
+void update(Tank *t, List *bs, List *ms, List *xps, float *exp);
+void draw(Tank *t, List *bs, List *ms, List *xps, float exp);
+void terminate(Tank *t, List *bs, List *ms, List *xps);
 void handle_input(Tank *t);
 void spawn_mobs(List *ms);
 void handle_collision_mob_bullet(List *bs, List *ms);
-bool handle_collision_mob_tank(List *ms, Tank *t);
+void handle_collision_exp_tank(List *xps, Tank *t, float *total_exp);
+void draw_exp_bar(float exp);
 
 int main() {
     Tank *t;
     List *bs;   // bullets
     List *ms;   // mobs
-    initialize(&t, &bs, &ms);
+    List *xps;
+    float exp;
+    initialize(&t, &bs, &ms, &xps, &exp);
     while (!WindowShouldClose()) {
-        update(t, bs, ms);
-        draw(t, bs, ms);
+        update(t, bs, ms, xps, &exp);
+        draw(t, bs, ms, xps, exp);
     }
-    terminate(t, bs, ms);
+    terminate(t, bs, ms, xps);
     return 0;
 }
 
-void initialize(Tank **t, List **bs, List **ms) {
+void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
     InitWindow(0, 0, "Tank Survival");
     ToggleFullscreen();
     init_constants(GetScreenWidth(), GetScreenHeight());
@@ -45,9 +51,11 @@ void initialize(Tank **t, List **bs, List **ms) {
     *t = tank_create(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
     *bs = list_create(MAX_BULLETS_INITIAL);
     *ms = list_create(MAX_MOBS_INITIAL);
+    *xps = list_create(MAX_EXPS_INITIAL);
+    *exp = 0.0;
 }
 
-void update(Tank *t, List *bs, List *ms) {
+void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     handle_input(t);
     tank_update(t);
     tank_shoot(t, bs);
@@ -61,30 +69,41 @@ void update(Tank *t, List *bs, List *ms) {
     }
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        if
-            (mob_is_dead(m)) mob_free(list_delete(ms, i));
+        if (mob_is_dead(m)) {
+            Exp *xp = exp_create(mob_get_pos(m));
+            list_insert(xps, xp);
+            mob_free(list_delete(ms, i));
+        }
         else
             mob_update(list_get(ms, i), tank_get_pos(t));
     }
+    for (int i = 0; i < list_len(xps); i++) {
+        exp_update(list_get(xps, i), tank_get_pos(t));
+    }
     handle_collision_mob_bullet(bs, ms);
+    handle_collision_exp_tank(xps, t, exp);
 }
 
-void draw(Tank *t, List *bs, List *ms) {
+void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
     BeginDrawing();
-    ClearBackground(RAYWHITE);
-    for (int i = 0; i < list_len(ms); i++)
-        mob_draw(list_get(ms, i));
+    ClearBackground(BACKGROUND_COLOR);
     for (int i = 0; i < list_len(bs); i++)
         bullet_draw(list_get(bs, i));
+    for (int i = 0; i < list_len(xps); i++)
+        exp_draw(list_get(xps, i));
+    for (int i = 0; i < list_len(ms); i++)
+        mob_draw(list_get(ms, i));
     tank_draw(t);
+    draw_exp_bar(exp);
     EndDrawing();
 }
 
-void terminate(Tank *t, List *bs, List *ms) {
+void terminate(Tank *t, List *bs, List *ms, List *xps) {
     CloseWindow();
     tank_free(t);
     list_free(bs);
     list_free(ms);
+    list_free(xps);
 }
 
 void handle_input(Tank *t) {
@@ -156,8 +175,11 @@ void handle_collision_mob_bullet(List *bs, List *ms) {
         for (int y = 0; y < list_len(bs); y++) {
             Mob *m = list_get(ms, i);
             Bullet *b = list_get(bs, y);
-            if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS * 0.8, bullet_get_pos(b), BULLET_RADIUS)) {
+            if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
                 mob_reduce_hp(m, TANK_BULLET_DAMAGE);
+                Vector2 knockback_vector = Vector2Negate(bullet_get_dir(b));
+                float knockback_angle = Vector2Angle((Vector2){0, 1}, knockback_vector);
+                mob_apply_knockback(m, 15, knockback_angle);
                 bullet_free(list_delete(bs, y));
                 i--;
                 y--;
@@ -165,4 +187,21 @@ void handle_collision_mob_bullet(List *bs, List *ms) {
             }
         }
     }
+}
+
+void handle_collision_exp_tank(List *xps, Tank *t, float *exp) {
+    for (int i = 0; i < list_len(xps); i++) {
+        Exp *xp = list_get(xps, i);
+        if (CheckCollisionCircles(exp_get_pos(xp), EXP_RADIUS, tank_get_pos(t), TANK_TURRET_RADIUS)) {
+            xp = list_delete(xps, i);
+            (*exp) += exp_get_points(xp);
+            exp_free(xp);
+        }
+    }
+}
+
+void draw_exp_bar(float exp) {
+    float bar_width = (exp / EXP_MAX) * EXPBAR_WIDTH;
+    DrawRectangle(0, SCREEN_HEIGHT - EXPBAR_HEIGHT + 1, bar_width, EXPBAR_HEIGHT, EXP_COLOR);
+    //TODO: glow effect
 }

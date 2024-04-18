@@ -46,3 +46,7 @@ bool bullet_out_of_bounds(Bullet *b) {
 Vector2 bullet_get_pos(Bullet *b) {
     return b->pos;
 }
+
+Vector2 bullet_get_dir(Bullet *b) {
+    return b->dir;
+}

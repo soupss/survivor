@@ -2,6 +2,7 @@
 * debug build and macro
 * port to web
 * check for null pointers (ex mob_update target is null pointer)
+* consistent default vectors
 
 # game features
 
