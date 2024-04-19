@@ -149,6 +149,7 @@ void tank_turret_rotate(Tank *t, int dir) {
 }
 
 void tank_shoot(Tank *t, List *bs) {
+    // TODO: recoil
     static int shot_delta = 0;
     if (shot_delta >= TANK_SHOT_DELAY) {
         Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));

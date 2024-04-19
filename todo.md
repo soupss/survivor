@@ -7,10 +7,6 @@
 # game features
 
 * gameplay loop
-    * enemies drop currency -> buy between waves
-* shop
-    * random items every wave
-    * lock items to keep until next wave
 * sound
 * menu
 * barrel recoil

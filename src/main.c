@@ -15,6 +15,8 @@
 #define MOB_SPAWN_DELAY 200
 #define TANK_BULLET_DAMAGE 4
 #define EXP_MAX 15
+#define BULLET_KNOCKBACK_DISTANCE 6
+#define BULLET_KNOCKBACK_DURATION 3
 
 void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp);
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp);
@@ -22,15 +24,16 @@ void draw(Tank *t, List *bs, List *ms, List *xps, float exp);
 void terminate(Tank *t, List *bs, List *ms, List *xps);
 void handle_input(Tank *t);
 void spawn_mobs(List *ms);
-void handle_collision_mob_bullet(List *bs, List *ms);
+void handle_collision_bullet_mob(List *bs, List *ms);
 void handle_collision_exp_tank(List *xps, Tank *t, float *total_exp);
+bool check_collision_tank_mob(Tank *t, List *bs);
 void draw_exp_bar(float exp);
 
 int main() {
     Tank *t;
     List *bs;   // bullets
     List *ms;   // mobs
-    List *xps;
+    List *xps;  // exp gems
     float exp;
     initialize(&t, &bs, &ms, &xps, &exp);
     while (!WindowShouldClose()) {
@@ -75,12 +78,12 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
             mob_free(list_delete(ms, i));
         }
         else
-            mob_update(list_get(ms, i), tank_get_pos(t));
+            mob_update(list_get(ms, i), tank_get_pos(t), ms);
     }
     for (int i = 0; i < list_len(xps); i++) {
         exp_update(list_get(xps, i), tank_get_pos(t));
     }
-    handle_collision_mob_bullet(bs, ms);
+    handle_collision_bullet_mob(bs, ms);
     handle_collision_exp_tank(xps, t, exp);
 }
 
@@ -169,7 +172,7 @@ void spawn_mobs(List *ms) {
         spawn_delta++;
 }
 
-void handle_collision_mob_bullet(List *bs, List *ms) {
+void handle_collision_bullet_mob(List *bs, List *ms) {
     //TODO: precise collision
     for (int i = 0; i < list_len(ms); i++) {
         for (int y = 0; y < list_len(bs); y++) {
@@ -177,9 +180,9 @@ void handle_collision_mob_bullet(List *bs, List *ms) {
             Bullet *b = list_get(bs, y);
             if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
                 mob_reduce_hp(m, TANK_BULLET_DAMAGE);
-                Vector2 knockback_vector = Vector2Negate(bullet_get_dir(b));
+                Vector2 knockback_vector = bullet_get_dir(b);
                 float knockback_angle = Vector2Angle((Vector2){0, 1}, knockback_vector);
-                mob_apply_knockback(m, 15, knockback_angle);
+                mob_apply_knockback(m, BULLET_KNOCKBACK_DISTANCE, knockback_angle, BULLET_KNOCKBACK_DURATION);
                 bullet_free(list_delete(bs, y));
                 i--;
                 y--;

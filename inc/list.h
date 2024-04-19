@@ -8,6 +8,5 @@ void *list_get(List *l, int i);
 int list_len(List *l);
 void list_insert(List *l, void *el);
 void *list_delete(List *l, int i);
-void list_display(List *l);
 
 #endif
