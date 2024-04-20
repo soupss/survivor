@@ -5,6 +5,7 @@
 
 #define BACKGROUND_COLOR RAYWHITE
 #define EXP_COLOR SKYBLUE
+#define TANK_MAX_HP 20
 
 extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;
@@ -16,8 +17,8 @@ extern float TANK_BARREL_WIDTH;
 extern float TANK_BARREL_LENGTH;
 extern float BULLET_RADIUS;
 extern float MOB_RADIUS;
-extern float EXP_RADIUS;
-extern float EXP_RANGE;
+extern float EXPORB_RADIUS;
+extern float EXPORB_PICKUPRANGE;
 extern float EXPBAR_WIDTH;
 extern float EXPBAR_HEIGHT;
 void init_constants(int screen_width, int screen_height);

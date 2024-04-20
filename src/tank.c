@@ -26,6 +26,7 @@ struct Tank {
     Vector2 velocity;
     float turret_radius;
     Vector2 turret_dir;
+    int hit_points;
 };
 
 Tank *tank_create(int x, int y) {
@@ -36,6 +37,7 @@ Tank *tank_create(int x, int y) {
     t->velocity = (Vector2){0};
     t->turret_radius = TANK_TURRET_RADIUS;
     t->turret_dir = (Vector2){0, 1};
+    t->hit_points = TANK_MAX_HP;
     return t;
 }
 
@@ -47,6 +49,23 @@ void tank_free(Tank *t) {
 void tank_update(Tank *t) {
     t->hull_rec.x += t->velocity.x * TANK_MOVE_SPEED;
     t->hull_rec.y += t->velocity.y * TANK_MOVE_SPEED;
+}
+
+void tank_draw(Tank *t) {
+    Vector2 hull_center = {t->hull_rec.width / 2, t->hull_rec.height / 2};
+    float hull_rotation = -RAD2DEG * Vector2Angle(t->hull_dir, (Vector2){0, -1});
+    DrawRectanglePro(t->hull_rec, hull_center, hull_rotation, TANK_HULL_COLOR);
+    Rectangle track_rec = {t->hull_rec.x, t->hull_rec.y, TANK_TRACK_WIDTH, t->hull_rec.height};
+    DrawRectanglePro(track_rec, hull_center, hull_rotation, TANK_TRACK_COLOR);
+    DrawRectanglePro(track_rec, hull_center, 180 + hull_rotation, TANK_TRACK_COLOR);
+    Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));
+    DrawCircleV(turret_pos, t->turret_radius, TANK_TURRET_COLOR);
+    Vector2 barrel_pos = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH / 2 - TANK_TURRET_RADIUS * 0.05));
+    Rectangle barrel_rec = {barrel_pos.x, barrel_pos.y, TANK_BARREL_WIDTH, TANK_BARREL_LENGTH};
+    Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, TANK_BARREL_LENGTH / 2};
+    float turret_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
+    DrawRectanglePro(barrel_rec, barrel_center, turret_rotation, TANK_TURRET_COLOR);
+    Vector2 tp = (Vector2){t->hull_rec.x, t->hull_rec.y};
 }
 
 void tank_velocity_calculate(Tank *t, int dir) {
@@ -162,21 +181,19 @@ void tank_shoot(Tank *t, List *bs) {
         shot_delta++;
 }
 
-void tank_draw(Tank *t) {
-    Vector2 hull_center = {t->hull_rec.width / 2, t->hull_rec.height / 2};
-    float hull_rotation = -RAD2DEG * Vector2Angle(t->hull_dir, (Vector2){0, -1});
-    DrawRectanglePro(t->hull_rec, hull_center, hull_rotation, TANK_HULL_COLOR);
-    Rectangle track_rec = {t->hull_rec.x, t->hull_rec.y, TANK_TRACK_WIDTH, t->hull_rec.height};
-    DrawRectanglePro(track_rec, hull_center, hull_rotation, TANK_TRACK_COLOR);
-    DrawRectanglePro(track_rec, hull_center, 180 + hull_rotation, TANK_TRACK_COLOR);
-    Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));
-    DrawCircleV(turret_pos, t->turret_radius, TANK_TURRET_COLOR);
-    Vector2 barrel_pos = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH / 2 - TANK_TURRET_RADIUS * 0.05));
-    Rectangle barrel_rec = {barrel_pos.x, barrel_pos.y, TANK_BARREL_WIDTH, TANK_BARREL_LENGTH};
-    Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, TANK_BARREL_LENGTH / 2};
-    float turret_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
-    DrawRectanglePro(barrel_rec, barrel_center, turret_rotation, TANK_TURRET_COLOR);
-    Vector2 tp = (Vector2){t->hull_rec.x, t->hull_rec.y};
+bool tank_is_dead(Tank *t) {
+    if (t->hit_points <= 0)
+        return true;
+    else
+        return false;
+}
+
+void tank_reduce_hp(Tank *t, int hp) {
+    t->hit_points -= hp;
+}
+
+int tank_get_hp(Tank *t) {
+    return t->hit_points;
 }
 
 Vector2 tank_get_pos(Tank *t) {
