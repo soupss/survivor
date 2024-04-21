@@ -12,6 +12,7 @@ short term
 * bullet damage fallof
     * signify
 * mobs separate from the player
+* free-> create
 
 # game features
 
