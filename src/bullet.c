@@ -1,16 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "bullet.h"
 #include <raymath.h>
 #include "util.h"
 
-#define BULLET_COLOR DARKGRAY
-#define BULLET_SPEED 15
-
 struct Bullet {
     Vector2 pos;
-    int radius;
+    float radius;
     Vector2 dir;
+    float distance_traveled;
 };
 
 Bullet* bullet_create(Vector2 pos, Vector2 dir) {
@@ -19,6 +18,7 @@ Bullet* bullet_create(Vector2 pos, Vector2 dir) {
     b->pos = pos;
     b->radius = BULLET_RADIUS;
     b->dir = dir;
+    b->distance_traveled = 0;
     return b;
 }
 
@@ -26,12 +26,27 @@ void bullet_free(Bullet *b) {
     free(b);
 }
 
+#define BULLET_SPEED 15
 void bullet_update(Bullet *b) {
     b->pos = Vector2Add(b->pos, Vector2Scale(b->dir, BULLET_SPEED));
+    b->distance_traveled += BULLET_SPEED;
 }
 
+#define BULLET_COLOR DARKGRAY
 void bullet_draw(Bullet *b) {
     DrawCircleV(b->pos, b->radius, BULLET_COLOR);
+}
+
+#define BULLET_DAMAGE 4
+#define BULLET_FULLDMG_RANGE SCREEN_HEIGHT
+#define BULLET_DAMAGE_DROPOFF_FACTOR 0.002
+int bullet_get_damage(Bullet *b) {
+    if (b->distance_traveled >= BULLET_FULLDMG_RANGE) {
+        float d = b->distance_traveled - BULLET_FULLDMG_RANGE;
+        return BULLET_DAMAGE - (BULLET_DAMAGE_DROPOFF_FACTOR * d);
+    }
+    else
+        return BULLET_DAMAGE;
 }
 
 bool bullet_out_of_bounds(Bullet *b) {

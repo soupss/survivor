@@ -4,15 +4,9 @@
 #include <raymath.h>
 #include "util.h"
 
-#define MOB_MOVE_SPEED 1.75
-#define MOB_COLOR RED
-#define MOB_MAX_HP 10
-#define MOB_MOUTH_SIZE 50
-#define MOB_MOUTH_SPEED 2
-#define MOB_ATTACK_DAMAGE 2
-
 void _mob_move(Mob *m, Vector2 target, List *ms);
 Vector2 _mob_separation_calculate(Mob *m, List *ms);
+
 typedef struct _StatusKnockback _StatusKnockback;
 _StatusKnockback *_status_knockback_create(float distance, float angle, float duration);
 void _status_knockback_update(Mob *m);
@@ -27,13 +21,8 @@ struct Mob {
     _StatusKnockback *status_knockback;
 };
 
-struct _StatusKnockback {
-    float distance;
-    float angle;
-    float duration;
-    float time_elapsed;
-};
-
+#define MOB_MAX_HP 10
+#define MOB_MOUTH_SIZE 50
 Mob *mob_create(Vector2 pos) {
     Mob *m = malloc(sizeof(Mob));
     check_alloc(m);
@@ -52,9 +41,9 @@ void mob_free(Mob *m) {
     free(m);
 }
 
+#define MOB_MOUTH_SPEED 2
 void mob_update(Mob *m, Vector2 target, List *ms) {
     //TODO: rotate instead of snap
-    //TODO: handle collision between mobs
     if (m->status_knockback != NULL)
         _status_knockback_update(m);
     else {
@@ -71,11 +60,48 @@ void mob_update(Mob *m, Vector2 target, List *ms) {
     }
 }
 
+#define MOB_MOVE_SPEED 1.75
 void _mob_move(Mob *m, Vector2 target, List *ms) {
     m->dir = Vector2Normalize(Vector2Subtract(target, m->pos));
     Vector2 separate = _mob_separation_calculate(m, ms);
     Vector2 steer = Vector2Add(m->dir, separate);
     m->pos = Vector2Add(m->pos ,Vector2Scale(steer, MOB_MOVE_SPEED));
+}
+
+#define MOB_ATTACK_DAMAGE 2
+int mob_attack(Mob *m) {
+    if (m->can_attack) {
+        m->can_attack = false;
+        return MOB_ATTACK_DAMAGE;
+    }
+    else
+        return 0;
+}
+
+void mob_apply_knockback(Mob *m, float distance, float angle, float duration) {
+    m->status_knockback = _status_knockback_create(distance, angle, duration);
+}
+
+void mob_reduce_hp(Mob *m, int hp) {
+    m->hit_points -= hp;
+}
+
+#define MOB_COLOR RED
+void mob_draw(Mob *m) {
+    float angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
+    DrawCircleV(m->pos, MOB_RADIUS, MOB_COLOR);
+    DrawCircleSector(m->pos, MOB_RADIUS, angle - m->mouth_size, angle + m->mouth_size, 365, BACKGROUND_COLOR);
+}
+
+bool mob_is_dead(Mob *m) {
+    if (m->hit_points <= 0)
+        return true;
+    else
+        return false;
+}
+
+Vector2 mob_get_pos(Mob *m) {
+    return m->pos;
 }
 
 Vector2 _mob_separation_calculate(Mob *m, List *ms) {
@@ -100,39 +126,12 @@ Vector2 _mob_separation_calculate(Mob *m, List *ms) {
     return steer;
 }
 
-void mob_draw(Mob *m) {
-    float angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
-    DrawCircleV(m->pos, MOB_RADIUS, MOB_COLOR);
-    DrawCircleSector(m->pos, MOB_RADIUS, angle - m->mouth_size, angle + m->mouth_size, 365, BACKGROUND_COLOR);
-}
-
-int mob_attack(Mob *m) {
-    if (m->can_attack) {
-        m->can_attack = false;
-        return MOB_ATTACK_DAMAGE;
-    }
-    else
-        return 0;
-}
-
-bool mob_is_dead(Mob *m) {
-    if (m->hit_points <= 0)
-        return true;
-    else
-        return false;
-}
-
-void mob_reduce_hp(Mob *m, int hp) {
-    m->hit_points -= hp;
-}
-
-Vector2 mob_get_pos(Mob *m) {
-    return m->pos;
-}
-
-void mob_apply_knockback(Mob *m, float distance, float angle, float duration) {
-    m->status_knockback = _status_knockback_create(distance, angle, duration);
-}
+struct _StatusKnockback {
+    float distance;
+    float angle;
+    float duration;
+    float time_elapsed;
+};
 
 _StatusKnockback *_status_knockback_create(float distance, float angle, float duration) {
     _StatusKnockback *kb = malloc(sizeof(_StatusKnockback));
@@ -154,43 +153,4 @@ void _status_knockback_update(Mob *m) {
         free(kb);
         m->status_knockback = NULL;
     }
-}
-
-#define EXPORB_SPEED 5
-
-struct ExpOrb {
-    Vector2 pos;
-    float exp_points;
-};
-
-ExpOrb *exp_create(Vector2 pos) {
-    ExpOrb *xp = malloc(sizeof(ExpOrb));
-    check_alloc(xp);
-    xp->pos = pos;
-    xp->exp_points = 1.0;
-    return xp;
-}
-
-void exp_free(ExpOrb *xp) {
-    free(xp);
-}
-
-void exp_update(ExpOrb *xp, Vector2 target) {
-    Vector2 diff = Vector2Subtract(target, xp->pos);
-    float range = Vector2Length(diff);
-    Vector2 dir = Vector2Normalize(diff);
-    if (range <= EXPORB_PICKUPRANGE)
-        xp->pos = Vector2Add(xp->pos, Vector2Scale(dir, EXPORB_SPEED));
-}
-
-void exp_draw(ExpOrb *xp) {
-    DrawCircleGradient(xp->pos.x, xp->pos.y, EXPORB_RADIUS, RAYWHITE, EXP_COLOR);
-}
-
-Vector2 exp_get_pos(ExpOrb *xp) {
-    return xp->pos;
-}
-
-float exp_get_points(ExpOrb *xp) {
-    return xp->exp_points;
 }

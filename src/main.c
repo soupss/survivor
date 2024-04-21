@@ -9,15 +9,6 @@
 #include "list.h"
 #include "util.h"
 
-#define MAX_BULLETS_INITIAL 5
-#define MAX_MOBS_INITIAL 5
-#define MAX_EXPS_INITIAL 5
-#define MOB_SPAWN_DELAY 200
-#define TANK_BULLET_DAMAGE 4
-#define EXP_MAX 15
-#define BULLET_KNOCKBACK_DISTANCE 6
-#define BULLET_KNOCKBACK_DURATION 3
-
 void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp);
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp);
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp);
@@ -25,27 +16,30 @@ void terminate(Tank *t, List *bs, List *ms, List *xps);
 void handle_input(Tank *t);
 void spawn_mob(List *ms);
 void handle_collision_tank(Tank *t, List *ms);
-void handle_collision_bullet(List *bs, List *ms);
+void handle_collision_bullet(List *bs, List *ms, List *xps);
 void handle_collision_exporb(List *xps, Tank *t, float *total_exp);
 void draw_exp_bar(float exp);
 void draw_hurt_screen(int tank_hp);
+void draw_death_screen();
 
 int main() {
     Tank *t;
     List *bs;   // bullets
     List *ms;   // mobs
-    List *xps;  // exp gems
+    List *xps;  // exp orbs
     float exp;
     initialize(&t, &bs, &ms, &xps, &exp);
     while (!WindowShouldClose()) {
-        if (!tank_is_dead(t))
-            update(t, bs, ms, xps, &exp);
+        update(t, bs, ms, xps, &exp);
         draw(t, bs, ms, xps, exp);
     }
     terminate(t, bs, ms, xps);
     return 0;
 }
 
+#define MAX_BULLETS_INITIAL 5
+#define MAX_MOBS_INITIAL 5
+#define MAX_EXPS_INITIAL 5
 void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
     InitWindow(0, 0, "Tank Survival");
     ToggleFullscreen();
@@ -57,14 +51,16 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
     *bs = list_create(MAX_BULLETS_INITIAL);
     *ms = list_create(MAX_MOBS_INITIAL);
     *xps = list_create(MAX_EXPS_INITIAL);
-    *exp = 0.0;
+    *exp = 0;
 }
 
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
-    handle_input(t);
-    tank_update(t);
-    tank_shoot(t, bs);
-    spawn_mob(ms);
+    if (!tank_is_dead(t)) {
+        handle_input(t);
+        tank_move(t);
+        tank_shoot(t, bs);
+        spawn_mob(ms);
+    }
     for (int i = 0; i < list_len(bs); i++) {
         Bullet *b = list_get(bs, i);
         if (bullet_out_of_bounds(b))
@@ -74,18 +70,12 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     }
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        if (mob_is_dead(m)) {
-            ExpOrb *xp = exp_create(mob_get_pos(m));
-            list_insert(xps, xp);
-            mob_free(list_delete(ms, i));
-        }
-        else
-            mob_update(list_get(ms, i), tank_get_pos(t), ms);
+        mob_update(list_get(ms, i), tank_get_pos(t), ms);
     }
     for (int i = 0; i < list_len(xps); i++) {
         exp_update(list_get(xps, i), tank_get_pos(t));
     }
-    handle_collision_bullet(bs, ms);
+    handle_collision_bullet(bs, ms, xps);
     handle_collision_exporb(xps, t, exp);
     handle_collision_tank(t, ms);
 }
@@ -93,17 +83,17 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
     BeginDrawing();
     ClearBackground(BACKGROUND_COLOR);
+    for (int i = 0; i < list_len(ms); i++)
+        mob_draw(list_get(ms, i));
     for (int i = 0; i < list_len(bs); i++)
         bullet_draw(list_get(bs, i));
     for (int i = 0; i < list_len(xps); i++)
         exp_draw(list_get(xps, i));
-    for (int i = 0; i < list_len(ms); i++)
-        mob_draw(list_get(ms, i));
     tank_draw(t);
     draw_exp_bar(exp);
     draw_hurt_screen(tank_get_hp(t));
     if (tank_is_dead(t))
-        DrawText("You Lose!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 100, BLACK);
+        draw_death_screen();
     EndDrawing();
 }
 
@@ -152,6 +142,7 @@ void handle_input(Tank *t) {
         tank_turret_rotate(t, 0);
 }
 
+#define MOB_SPAWN_DELAY 200
 void spawn_mob(List *ms) {
     static int spawn_delta = 0;
     if (spawn_delta >= MOB_SPAWN_DELAY) {
@@ -181,7 +172,7 @@ void spawn_mob(List *ms) {
 void handle_collision_tank(Tank *t, List *ms) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        float tank_hitbox_radius = (TANK_HULL_WIDTH + TANK_HULL_HEIGHT) / 4;
+        float tank_hitbox_radius = TANK_TURRET_RADIUS * 1.2;
         if (CheckCollisionCircles(tank_get_pos(t), tank_hitbox_radius, mob_get_pos(m), MOB_RADIUS)) {
             int damage = mob_attack(m);
             if (damage != 0) {
@@ -191,19 +182,26 @@ void handle_collision_tank(Tank *t, List *ms) {
     }
 }
 
-void handle_collision_bullet(List *bs, List *ms) {
-    //TODO: precise collision
+#define BULLET_KNOCKBACK_DISTANCE_FACTOR 1.5
+#define BULLET_KNOCKBACK_DURATION 3
+void handle_collision_bullet(List *bs, List *ms, List *xps) {
     for (int i = 0; i < list_len(ms); i++) {
         for (int y = 0; y < list_len(bs); y++) {
             Mob *m = list_get(ms, i);
             Bullet *b = list_get(bs, y);
             if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
-                mob_reduce_hp(m, TANK_BULLET_DAMAGE);
-                Vector2 knockback_vector = bullet_get_dir(b);
-                float knockback_angle = Vector2Angle((Vector2){0, 1}, knockback_vector);
-                mob_apply_knockback(m, BULLET_KNOCKBACK_DISTANCE, knockback_angle, BULLET_KNOCKBACK_DURATION);
+                float dmg = bullet_get_damage(b);
+                mob_reduce_hp(m, dmg);
+                float knockback_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
+                float knockback_distance = dmg * BULLET_KNOCKBACK_DISTANCE_FACTOR;
+                mob_apply_knockback(m, knockback_distance, knockback_angle, BULLET_KNOCKBACK_DURATION);
+                if (mob_is_dead(m)) {
+                    ExpOrb *xp = exp_create(mob_get_pos(m));
+                    list_insert(xps, xp);
+                    mob_free(list_delete(ms, i));
+                    i--;
+                }
                 bullet_free(list_delete(bs, y));
-                i--;
                 y--;
                 break;
             }
@@ -222,13 +220,30 @@ void handle_collision_exporb(List *xps, Tank *t, float *exp) {
     }
 }
 
+#define EXP_MAX 15
 void draw_exp_bar(float exp) {
     float bar_width = (exp / EXP_MAX) * EXPBAR_WIDTH;
     DrawRectangle(0, SCREEN_HEIGHT - EXPBAR_HEIGHT + 1, bar_width, EXPBAR_HEIGHT, EXP_COLOR);
     //TODO: glow effect
 }
 
+#define HS_MAX_ALPHA 0.9
 void draw_hurt_screen(int tank_hp) {
-    float alpha = 0.8 - 0.8 * (tank_hp / (float)TANK_MAX_HP);
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(RED, alpha));
+    float alpha = HS_MAX_ALPHA - HS_MAX_ALPHA * (tank_hp / (float)TANK_MAX_HP);
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(MAROON, alpha));
+}
+
+#define DS_FADEIN_SPEED 0.003
+#define DS_FONT_SIZE 100
+#define DS_FONT_SPACING 10
+void draw_death_screen() {
+    char *msg = "YOU DIED";
+    Vector2 msg_size = MeasureTextEx(GetFontDefault(), msg, DS_FONT_SIZE, DS_FONT_SPACING);
+    Vector2 screen_mid = {SCREEN_WIDTH / (float)2, SCREEN_HEIGHT / (float)2};
+    Vector2 pos = Vector2Subtract(screen_mid, Vector2Scale(msg_size, 0.5));
+    static float alpha = -0.3;
+    DrawTextEx(GetFontDefault(), msg, pos, DS_FONT_SIZE, DS_FONT_SPACING, Fade(BLACK, alpha));
+    if (alpha <= 1) {
+        alpha += DS_FADEIN_SPEED;
+    }
 }
