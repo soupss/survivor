@@ -19,7 +19,7 @@ List *list_create(int cap) {
     return l;
 }
 
-void list_free(List *l) {
+void list_destroy(List *l) {
     for (int i = 0; i < l->len; i++) free(l->arr[i]);
     free(l->arr);
     free(l);

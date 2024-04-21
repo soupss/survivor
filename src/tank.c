@@ -26,12 +26,12 @@ Tank *tank_create(int x, int y) {
     return t;
 }
 
-void tank_free(Tank *t) {
+void tank_destroy(Tank *t) {
     //TODO: explosion
     free(t);
 }
 
-#define TANK_MOVE_SPEED 5.0
+#define TANK_MOVE_SPEED 3.5
 void tank_move(Tank *t) {
     t->hull_rec.x += t->velocity.x * TANK_MOVE_SPEED;
     t->hull_rec.y += t->velocity.y * TANK_MOVE_SPEED;

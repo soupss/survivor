@@ -6,6 +6,7 @@
 #include "tank.h"
 #include "bullet.h"
 #include "mob.h"
+#include "exporb.h"
 #include "list.h"
 #include "util.h"
 
@@ -37,6 +38,7 @@ int main() {
     return 0;
 }
 
+#define FPS_TARGET 60
 #define MAX_BULLETS_INITIAL 5
 #define MAX_MOBS_INITIAL 5
 #define MAX_EXPS_INITIAL 5
@@ -45,7 +47,7 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
     ToggleFullscreen();
     init_constants(GetScreenWidth(), GetScreenHeight());
     SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-    SetTargetFPS(60);
+    SetTargetFPS(FPS_TARGET);
     srand(time(NULL));
     *t = tank_create(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
     *bs = list_create(MAX_BULLETS_INITIAL);
@@ -64,7 +66,7 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     for (int i = 0; i < list_len(bs); i++) {
         Bullet *b = list_get(bs, i);
         if (bullet_out_of_bounds(b))
-            bullet_free(list_delete(bs, i));
+            bullet_destroy(list_delete(bs, i));
         else
             bullet_update(b);
     }
@@ -73,7 +75,7 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
         mob_update(list_get(ms, i), tank_get_pos(t), ms);
     }
     for (int i = 0; i < list_len(xps); i++) {
-        exp_update(list_get(xps, i), tank_get_pos(t));
+        exporb_update(list_get(xps, i), tank_get_pos(t));
     }
     handle_collision_bullet(bs, ms, xps);
     handle_collision_exporb(xps, t, exp);
@@ -88,7 +90,7 @@ void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
     for (int i = 0; i < list_len(bs); i++)
         bullet_draw(list_get(bs, i));
     for (int i = 0; i < list_len(xps); i++)
-        exp_draw(list_get(xps, i));
+        exporb_draw(list_get(xps, i));
     tank_draw(t);
     draw_exp_bar(exp);
     draw_hurt_screen(tank_get_hp(t));
@@ -99,10 +101,10 @@ void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
 
 void terminate(Tank *t, List *bs, List *ms, List *xps) {
     CloseWindow();
-    tank_free(t);
-    list_free(bs);
-    list_free(ms);
-    list_free(xps);
+    tank_destroy(t);
+    list_destroy(bs);
+    list_destroy(ms);
+    list_destroy(xps);
 }
 
 void handle_input(Tank *t) {
@@ -169,10 +171,11 @@ void spawn_mob(List *ms) {
         spawn_delta++;
 }
 
+#define TANK_HITBOX_FACTOR 1.2
 void handle_collision_tank(Tank *t, List *ms) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        float tank_hitbox_radius = TANK_TURRET_RADIUS * 1.2;
+        float tank_hitbox_radius = TANK_TURRET_RADIUS * TANK_HITBOX_FACTOR;
         if (CheckCollisionCircles(tank_get_pos(t), tank_hitbox_radius, mob_get_pos(m), MOB_RADIUS)) {
             int damage = mob_attack(m);
             if (damage != 0) {
@@ -183,7 +186,7 @@ void handle_collision_tank(Tank *t, List *ms) {
 }
 
 #define BULLET_KNOCKBACK_DISTANCE_FACTOR 1.5
-#define BULLET_KNOCKBACK_DURATION 3
+#define BULLET_KNOCKBACK_DURATION_FACTOR 3
 void handle_collision_bullet(List *bs, List *ms, List *xps) {
     for (int i = 0; i < list_len(ms); i++) {
         for (int y = 0; y < list_len(bs); y++) {
@@ -194,14 +197,15 @@ void handle_collision_bullet(List *bs, List *ms, List *xps) {
                 mob_reduce_hp(m, dmg);
                 float knockback_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
                 float knockback_distance = dmg * BULLET_KNOCKBACK_DISTANCE_FACTOR;
-                mob_apply_knockback(m, knockback_distance, knockback_angle, BULLET_KNOCKBACK_DURATION);
+                float knockback_duration = dmg * BULLET_KNOCKBACK_DURATION_FACTOR;
+                mob_apply_knockback(m, knockback_distance, knockback_angle, knockback_duration);
                 if (mob_is_dead(m)) {
-                    ExpOrb *xp = exp_create(mob_get_pos(m));
+                    ExpOrb *xp = exporb_create(mob_get_pos(m));
                     list_insert(xps, xp);
-                    mob_free(list_delete(ms, i));
+                    mob_destroy(list_delete(ms, i));
                     i--;
                 }
-                bullet_free(list_delete(bs, y));
+                bullet_destroy(list_delete(bs, y));
                 y--;
                 break;
             }
@@ -212,10 +216,10 @@ void handle_collision_bullet(List *bs, List *ms, List *xps) {
 void handle_collision_exporb(List *xps, Tank *t, float *exp) {
     for (int i = 0; i < list_len(xps); i++) {
         ExpOrb *xp = list_get(xps, i);
-        if (CheckCollisionCircles(exp_get_pos(xp), EXPORB_RADIUS, tank_get_pos(t), TANK_TURRET_RADIUS)) {
+        if (CheckCollisionCircles(exporb_get_pos(xp), EXPORB_RADIUS, tank_get_pos(t), TANK_TURRET_RADIUS)) {
             xp = list_delete(xps, i);
-            (*exp) += exp_get_points(xp);
-            exp_free(xp);
+            (*exp) += exporb_get_points(xp);
+            exporb_destroy(xp);
         }
     }
 }

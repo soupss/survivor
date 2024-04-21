@@ -36,7 +36,7 @@ Mob *mob_create(Vector2 pos) {
     return m;
 }
 
-void mob_free(Mob *m) {
+void mob_destroy(Mob *m) {
     //TODO: explosion
     free(m);
 }

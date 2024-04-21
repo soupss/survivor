@@ -7,7 +7,7 @@
 
 typedef struct Tank Tank;
 Tank *tank_create(int x, int y);
-void tank_free(Tank *t);
+void tank_destroy(Tank *t);
 void tank_move(Tank *t);
 void tank_velocity_calculate(Tank *t, int dir);
 void tank_hull_rotate(Tank *t, int dir);

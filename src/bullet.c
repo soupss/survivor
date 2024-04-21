@@ -22,7 +22,7 @@ Bullet* bullet_create(Vector2 pos, Vector2 dir) {
     return b;
 }
 
-void bullet_free(Bullet *b) {
+void bullet_destroy(Bullet *b) {
     free(b);
 }
 

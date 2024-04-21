@@ -15,6 +15,7 @@ extern float TANK_TRACK_WIDTH;
 extern float TANK_TURRET_RADIUS;
 extern float TANK_BARREL_WIDTH;
 extern float TANK_BARREL_LENGTH;
+extern float TANK_HITBOX_RADIUS;
 extern float BULLET_RADIUS;
 extern float MOB_RADIUS;
 extern float EXPORB_RADIUS;
