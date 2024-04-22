@@ -51,7 +51,7 @@ void tank_update(Tank *t, List *bs) {
 #define TANK_MOVE_DEC 0.03
 #define TANK_VEL_STAB_RATE 0.2
 void tank_velocity_calculate(Tank *t, int dir) {
-    int dir_vel;
+    int dir_vel = 0;
     if (Vector2Length(t->velocity) != 0){
         float dot = Vector2DotProduct(t->velocity, t->hull_dir);
         if (dot >= 0)
@@ -59,8 +59,6 @@ void tank_velocity_calculate(Tank *t, int dir) {
         else if (dot < 0)
             dir_vel = -1;
     }
-    else
-        dir_vel = 0;
     if (dir != 0) {
         // start from stop
         if (dir_vel == 0) {
@@ -160,7 +158,6 @@ void tank_hp_reduce(Tank *t, int hp) {
     t->hurt_delta = 0;
     if (t->hit_points < 0)
         t->hit_points = 0;
-    printf("%d\n", t->hit_points);
 }
 
 #define TANK_HULL_COLOR DARKGREEN
@@ -180,7 +177,6 @@ void tank_draw(Tank *t) {
     Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, TANK_BARREL_LENGTH / 2};
     float turret_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
     DrawRectanglePro(barrel_rec, barrel_center, turret_rotation, TANK_TURRET_COLOR);
-    Vector2 tp = (Vector2){t->hull_rec.x, t->hull_rec.y};
 }
 
 bool tank_is_dead(Tank *t) {
@@ -221,7 +217,6 @@ void _tank_hp_regenerate(Tank *t) {
     if (t->hurt_delta >= TANK_HEALTH_REGEN_DELAY && t->hit_points < TANK_MAX_HP) {
         if (regen_tick_delta >= TANK_HEALTH_REGEN_TICK_DELAY) {
             t->hit_points += TANK_HEALTH_REGEN_AMOUNT;
-            printf("%d\n", t->hit_points);
             regen_tick_delta = 0;
         }
         else

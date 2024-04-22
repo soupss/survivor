@@ -38,7 +38,7 @@ void bullet_draw(Bullet *b) {
 }
 
 #define BULLET_DAMAGE 4
-#define BULLET_FULLDMG_RANGE SCREEN_HEIGHT
+#define BULLET_FULLDMG_RANGE SCREEN_HEIGHT * 0.8
 #define BULLET_DAMAGE_DROPOFF_FACTOR 0.002
 int bullet_get_damage(Bullet *b) {
     if (b->distance_traveled >= BULLET_FULLDMG_RANGE) {

@@ -7,7 +7,7 @@ EXECUTABLE := $(BIN_DIR)/out
 
 SOURCES := $(wildcard $(SRC_DIR)/*.c)
 OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SOURCES))
-CFLAGS := -I$(INC_DIR) $(shell pkg-config --cflags raylib)
+CFLAGS := -I$(INC_DIR) $(shell pkg-config --cflags raylib) -Wall -Wextra
 LDFLAGS := $(shell pkg-config --libs raylib)
 
 .PHONY: all clean

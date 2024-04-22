@@ -2,6 +2,7 @@
 #define UTIL_H
 
 #include <raylib.h>
+#include <list.h>
 
 #define BACKGROUND_COLOR RAYWHITE
 #define EXP_COLOR SKYBLUE
@@ -26,5 +27,8 @@ void init_constants(int screen_width, int screen_height);
 void check_alloc(void *p);
 Vector2 Vector2AddMagnitude(Vector2 v, float add);
 Vector2 Vector2SubtractMagnitude(Vector2 v, float subtract);
+// TODO: decide
+Vector2 calculate_separation_list(void *p, List *l);
+Vector2 calculate_separation_entity(void *p1, void *p2);
 
 #endif

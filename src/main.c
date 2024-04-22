@@ -69,13 +69,10 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
         else
             bullet_update(b);
     }
-    for (int i = 0; i < list_len(ms); i++) {
-        Mob *m = list_get(ms, i);
+    for (int i = 0; i < list_len(ms); i++)
         mob_update(list_get(ms, i), tank_get_pos(t), ms);
-    }
-    for (int i = 0; i < list_len(xps); i++) {
+    for (int i = 0; i < list_len(xps); i++)
         exporb_update(list_get(xps, i), tank_get_pos(t));
-    }
     collision_handle_bullet(bs, ms, xps);
     collision_handle_exporb(xps, t, exp);
     collision_handle_tank(t, ms);
@@ -184,7 +181,7 @@ void collision_handle_tank(Tank *t, List *ms) {
     }
 }
 
-#define BULLET_KNOCKBACK_DISTANCE_FACTOR 5
+#define BULLET_KNOCKBACK_DISTANCE_FACTOR 3
 #define BULLET_KNOCKBACK_DURATION_FACTOR 1.5
 void collision_handle_bullet(List *bs, List *ms, List *xps) {
     for (int i = 0; i < list_len(ms); i++) {
