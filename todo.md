@@ -1,21 +1,21 @@
-long term
-* port to web
+feat
+* blinking hurt screen
+* mobs separate from the player
+* barrel recoil
+    * status_recoil
 
-short term
+refactor
+* draw_hurt_screen -> draw_hurtscreen
+    * _ signifies change in abstraction level
 * const function args
 * check for null pointers (ex mob_update target is null pointer)
     * what happens when tank disappears
-* no magic numbers
-* function macros
-* consistent function order
-* mobs separate from the player
 
 # game features
 
 * gameplay loop
 * sound
 * menu
-* barrel recoil
 
 ## weapon types
 
