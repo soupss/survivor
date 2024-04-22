@@ -160,6 +160,12 @@ void tank_shoot(Tank *t, List *bs) {
         shot_delta++;
 }
 
+#define TANK_HEALTH_POINTS_REG 0.5
+void tank_regenerate_hp(Tank *t, int hp) {
+    // last hit
+    t->hit_points += TANK_HEALTH_POINTS_REG;
+}
+
 void tank_reduce_hp(Tank *t, int hp) {
     t->hit_points -= hp;
     if (t->hit_points < 0)
