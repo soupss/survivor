@@ -5,6 +5,9 @@
 #include <raymath.h>
 #include "util.h"
 
+void _tank_shoot(Tank *t, List *bs);
+void _tank_hp_regenerate(Tank *t);
+
 struct Tank {
     Rectangle hull_rec;
     Vector2 hull_dir;
@@ -12,6 +15,7 @@ struct Tank {
     float turret_radius;
     Vector2 turret_dir;
     int hit_points;
+    int hurt_delta;
 };
 
 Tank *tank_create(int x, int y) {
@@ -23,6 +27,7 @@ Tank *tank_create(int x, int y) {
     t->turret_radius = TANK_TURRET_RADIUS;
     t->turret_dir = (Vector2){0, 1};
     t->hit_points = TANK_MAX_HP;
+    t->hurt_delta = 0;
     return t;
 }
 
@@ -32,9 +37,14 @@ void tank_destroy(Tank *t) {
 }
 
 #define TANK_MOVE_SPEED 3.5
-void tank_move(Tank *t) {
-    t->hull_rec.x += t->velocity.x * TANK_MOVE_SPEED;
-    t->hull_rec.y += t->velocity.y * TANK_MOVE_SPEED;
+void tank_update(Tank *t, List *bs) {
+    if (Vector2Length(t->velocity) > 0) {
+        t->hull_rec.x += t->velocity.x * TANK_MOVE_SPEED;
+        t->hull_rec.y += t->velocity.y * TANK_MOVE_SPEED;
+    }
+    _tank_shoot(t, bs);
+    _tank_hp_regenerate(t);
+    t->hurt_delta++;
 }
 
 #define TANK_MOVE_ACC 0.03
@@ -145,31 +155,12 @@ void tank_turret_rotate(Tank *t, int dir) {
         t->turret_dir = Vector2Rotate(t->turret_dir, momentum * dir_curr * TANK_TURRET_ROT_SPEED);
 }
 
-#define TANK_SHOT_DELAY 60
-void tank_shoot(Tank *t, List *bs) {
-    // TODO: recoil
-    static int shot_delta = 0;
-    if (shot_delta >= TANK_SHOT_DELAY) {
-        Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));
-        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS / 2));
-        Bullet *b = bullet_create(barrel_end, t->turret_dir);
-        list_insert(bs, b);
-        shot_delta = 0;
-    }
-    else
-        shot_delta++;
-}
-
-#define TANK_HEALTH_POINTS_REG 0.5
-void tank_regenerate_hp(Tank *t, int hp) {
-    // last hit
-    t->hit_points += TANK_HEALTH_POINTS_REG;
-}
-
-void tank_reduce_hp(Tank *t, int hp) {
+void tank_hp_reduce(Tank *t, int hp) {
     t->hit_points -= hp;
+    t->hurt_delta = 0;
     if (t->hit_points < 0)
         t->hit_points = 0;
+    printf("%d\n", t->hit_points);
 }
 
 #define TANK_HULL_COLOR DARKGREEN
@@ -205,4 +196,37 @@ int tank_get_hp(Tank *t) {
 
 Vector2 tank_get_pos(Tank *t) {
     return (Vector2){t->hull_rec.x, t->hull_rec.y};
+}
+
+#define TANK_SHOT_DELAY 60
+void _tank_shoot(Tank *t, List *bs) {
+    // TODO: recoil
+    static int shot_delta = 0;
+    if (shot_delta >= TANK_SHOT_DELAY) {
+        Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));
+        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS / 2));
+        Bullet *b = bullet_create(barrel_end, t->turret_dir);
+        list_insert(bs, b);
+        shot_delta = 0;
+    }
+    else
+        shot_delta++;
+}
+
+#define TANK_HEALTH_REGEN_DELAY 200
+#define TANK_HEALTH_REGEN_TICK_DELAY 30
+#define TANK_HEALTH_REGEN_AMOUNT 1
+void _tank_hp_regenerate(Tank *t) {
+    static int regen_tick_delta = TANK_HEALTH_REGEN_TICK_DELAY;
+    if (t->hurt_delta >= TANK_HEALTH_REGEN_DELAY && t->hit_points < TANK_MAX_HP) {
+        if (regen_tick_delta >= TANK_HEALTH_REGEN_TICK_DELAY) {
+            t->hit_points += TANK_HEALTH_REGEN_AMOUNT;
+            printf("%d\n", t->hit_points);
+            regen_tick_delta = 0;
+        }
+        else
+            regen_tick_delta++;
+    }
+    else
+        regen_tick_delta = TANK_HEALTH_REGEN_TICK_DELAY;
 }

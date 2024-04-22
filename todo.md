@@ -5,11 +5,13 @@ feat
     * status_recoil
 
 refactor
-* draw_hurt_screen -> draw_hurtscreen
-    * _ signifies change in abstraction level
 * const function args
 * check for null pointers (ex mob_update target is null pointer)
     * what happens when tank disappears
+
+build
+* port to web
+* errors
 
 # game features
 

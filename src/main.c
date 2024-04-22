@@ -14,14 +14,14 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp);
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp);
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp);
 void terminate(Tank *t, List *bs, List *ms, List *xps);
-void handle_input(Tank *t);
+void input_handle(Tank *t);
 void spawn_mob(List *ms);
-void handle_collision_tank(Tank *t, List *ms);
-void handle_collision_bullet(List *bs, List *ms, List *xps);
-void handle_collision_exporb(List *xps, Tank *t, float *total_exp);
-void draw_exp_bar(float exp);
-void draw_hurt_screen(int tank_hp);
-void draw_death_screen();
+void collision_handle_tank(Tank *t, List *ms);
+void collision_handle_bullet(List *bs, List *ms, List *xps);
+void collision_handle_exporb(List *xps, Tank *t, float *total_exp);
+void draw_expbar(float exp);
+void draw_hurtscreen(int tank_hp);
+void draw_deathscreen();
 
 int main() {
     Tank *t;
@@ -58,9 +58,8 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
 
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     if (!tank_is_dead(t)) {
-        handle_input(t);
-        tank_move(t);
-        tank_shoot(t, bs);
+        input_handle(t);
+        tank_update(t, bs);
         spawn_mob(ms);
     }
     for (int i = 0; i < list_len(bs); i++) {
@@ -77,9 +76,9 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     for (int i = 0; i < list_len(xps); i++) {
         exporb_update(list_get(xps, i), tank_get_pos(t));
     }
-    handle_collision_bullet(bs, ms, xps);
-    handle_collision_exporb(xps, t, exp);
-    handle_collision_tank(t, ms);
+    collision_handle_bullet(bs, ms, xps);
+    collision_handle_exporb(xps, t, exp);
+    collision_handle_tank(t, ms);
 }
 
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
@@ -92,10 +91,10 @@ void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
     for (int i = 0; i < list_len(xps); i++)
         exporb_draw(list_get(xps, i));
     tank_draw(t);
-    draw_exp_bar(exp);
-    draw_hurt_screen(tank_get_hp(t));
+    draw_expbar(exp);
+    draw_hurtscreen(tank_get_hp(t));
     if (tank_is_dead(t))
-        draw_death_screen();
+        draw_deathscreen();
     EndDrawing();
 }
 
@@ -107,7 +106,7 @@ void terminate(Tank *t, List *bs, List *ms, List *xps) {
     list_destroy(xps);
 }
 
-void handle_input(Tank *t) {
+void input_handle(Tank *t) {
     bool hull_rotating = false;
     bool turret_rotating = false;
     bool tank_moving = false;
@@ -172,33 +171,33 @@ void spawn_mob(List *ms) {
 }
 
 #define TANK_HITBOX_FACTOR 1.2
-void handle_collision_tank(Tank *t, List *ms) {
+void collision_handle_tank(Tank *t, List *ms) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
         float tank_hitbox_radius = TANK_TURRET_RADIUS * TANK_HITBOX_FACTOR;
         if (CheckCollisionCircles(tank_get_pos(t), tank_hitbox_radius, mob_get_pos(m), MOB_RADIUS)) {
             int damage = mob_attack(m);
             if (damage != 0) {
-                tank_reduce_hp(t, damage);
+                tank_hp_reduce(t, damage);
             }
         }
     }
 }
 
-#define BULLET_KNOCKBACK_DISTANCE_FACTOR 1.5
-#define BULLET_KNOCKBACK_DURATION_FACTOR 3
-void handle_collision_bullet(List *bs, List *ms, List *xps) {
+#define BULLET_KNOCKBACK_DISTANCE_FACTOR 5
+#define BULLET_KNOCKBACK_DURATION_FACTOR 1.5
+void collision_handle_bullet(List *bs, List *ms, List *xps) {
     for (int i = 0; i < list_len(ms); i++) {
         for (int y = 0; y < list_len(bs); y++) {
             Mob *m = list_get(ms, i);
             Bullet *b = list_get(bs, y);
             if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
                 float dmg = bullet_get_damage(b);
-                mob_reduce_hp(m, dmg);
+                mob_hp_reduce(m, dmg);
                 float knockback_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
                 float knockback_distance = dmg * BULLET_KNOCKBACK_DISTANCE_FACTOR;
                 float knockback_duration = dmg * BULLET_KNOCKBACK_DURATION_FACTOR;
-                mob_apply_knockback(m, knockback_distance, knockback_angle, knockback_duration);
+                mob_set_status_knockback(m, knockback_distance, knockback_angle, knockback_duration);
                 if (mob_is_dead(m)) {
                     ExpOrb *xp = exporb_create(mob_get_pos(m));
                     list_insert(xps, xp);
@@ -213,7 +212,7 @@ void handle_collision_bullet(List *bs, List *ms, List *xps) {
     }
 }
 
-void handle_collision_exporb(List *xps, Tank *t, float *exp) {
+void collision_handle_exporb(List *xps, Tank *t, float *exp) {
     for (int i = 0; i < list_len(xps); i++) {
         ExpOrb *xp = list_get(xps, i);
         if (CheckCollisionCircles(exporb_get_pos(xp), EXPORB_RADIUS, tank_get_pos(t), TANK_TURRET_RADIUS)) {
@@ -225,14 +224,14 @@ void handle_collision_exporb(List *xps, Tank *t, float *exp) {
 }
 
 #define EXP_MAX 15
-void draw_exp_bar(float exp) {
+void draw_expbar(float exp) {
     float bar_width = (exp / EXP_MAX) * EXPBAR_WIDTH;
     DrawRectangle(0, SCREEN_HEIGHT - EXPBAR_HEIGHT + 1, bar_width, EXPBAR_HEIGHT, EXP_COLOR);
     //TODO: glow effect
 }
 
 #define HS_MAX_ALPHA 0.9
-void draw_hurt_screen(int tank_hp) {
+void draw_hurtscreen(int tank_hp) {
     float alpha = HS_MAX_ALPHA - HS_MAX_ALPHA * (tank_hp / (float)TANK_MAX_HP);
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(MAROON, alpha));
 }
@@ -240,7 +239,7 @@ void draw_hurt_screen(int tank_hp) {
 #define DS_FADEIN_SPEED 0.003
 #define DS_FONT_SIZE 100
 #define DS_FONT_SPACING 10
-void draw_death_screen() {
+void draw_deathscreen() {
     char *msg = "YOU DIED";
     Vector2 msg_size = MeasureTextEx(GetFontDefault(), msg, DS_FONT_SIZE, DS_FONT_SPACING);
     Vector2 screen_mid = {SCREEN_WIDTH / (float)2, SCREEN_HEIGHT / (float)2};

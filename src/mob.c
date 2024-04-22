@@ -1,24 +1,22 @@
+#include "mob.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "mob.h"
 #include <raymath.h>
+#include "status.h"
 #include "util.h"
 
 void _mob_move(Mob *m, Vector2 target, List *ms);
 Vector2 _mob_separation_calculate(Mob *m, List *ms);
-
-typedef struct _StatusKnockback _StatusKnockback;
-_StatusKnockback *_status_knockback_create(float distance, float angle, float duration);
-void _status_knockback_update(Mob *m);
+void _mob_status_knockback_handle(Mob *m);
 
 struct Mob {
     Vector2 pos;
+    StatusKnockback *status_knockback;
     Vector2 dir;
     int hit_points;
     float mouth_size;
     int mouth_dir;
     bool can_attack;
-    _StatusKnockback *status_knockback;
 };
 
 #define MOB_MAX_HP 10
@@ -45,7 +43,7 @@ void mob_destroy(Mob *m) {
 void mob_update(Mob *m, Vector2 target, List *ms) {
     //TODO: rotate instead of snap
     if (m->status_knockback != NULL)
-        _status_knockback_update(m);
+        status_knockback_handle_vec(m);
     else {
         m->mouth_size += m->mouth_dir * MOB_MOUTH_SPEED;
         if (m->mouth_size <= 0) {
@@ -78,11 +76,11 @@ int mob_attack(Mob *m) {
         return 0;
 }
 
-void mob_apply_knockback(Mob *m, float distance, float angle, float duration) {
-    m->status_knockback = _status_knockback_create(distance, angle, duration);
+void mob_set_status_knockback(Mob *m, float distance, float angle, float duration) {
+    m->status_knockback = status_knockback_create(distance, angle, duration);
 }
 
-void mob_reduce_hp(Mob *m, int hp) {
+void mob_hp_reduce(Mob *m, int hp) {
     m->hit_points -= hp;
 }
 
@@ -124,33 +122,4 @@ Vector2 _mob_separation_calculate(Mob *m, List *ms) {
         steer = Vector2Scale(steer, 1 / (float)count);
     }
     return steer;
-}
-
-struct _StatusKnockback {
-    float distance;
-    float angle;
-    float duration;
-    float time_elapsed;
-};
-
-_StatusKnockback *_status_knockback_create(float distance, float angle, float duration) {
-    _StatusKnockback *kb = malloc(sizeof(_StatusKnockback));
-    check_alloc(kb);
-    kb->distance = distance;
-    kb->angle = angle;
-    kb->duration = duration;
-    kb->time_elapsed = 0;
-    return kb;
-}
-
-void _status_knockback_update(Mob *m) {
-    _StatusKnockback *kb = m->status_knockback;
-    float d = kb->distance / kb->duration;
-    Vector2 knockback = Vector2Rotate((Vector2){0, d}, kb->angle);
-    m->pos = Vector2Add(m->pos, knockback);
-    kb->time_elapsed++;
-    if (kb->time_elapsed >= kb->duration) {
-        free(kb);
-        m->status_knockback = NULL;
-    }
 }
