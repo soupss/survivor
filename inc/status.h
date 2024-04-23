@@ -1,9 +1,12 @@
 #ifndef STATUS_H
 #define STATUS_H
 
+#include <raylib.h>
+
 typedef struct StatusKnockback StatusKnockback;
-StatusKnockback *status_knockback_create(float distance, float angle, float duration);
-void status_knockback_handle_vec(void *p); // pointer has a Vector2 pos field
-void status_knockback_handle_rec(void *p); // pointer has a Rectangle rec field
+StatusKnockback *status_knockback_create(float distance, float angle, int duration);
+Vector2 status_knockback_update(StatusKnockback *kb);
+int status_knockback_get_duration(StatusKnockback *kb);
+int status_knockback_get_time_elapsed(StatusKnockback *kb);
 
 #endif

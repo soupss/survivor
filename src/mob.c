@@ -41,9 +41,19 @@ void mob_destroy(Mob *m) {
 
 #define MOB_MOUTH_SPEED 2
 void mob_update(Mob *m, Vector2 target, List *ms) {
-    //TODO: rotate instead of snap
-    if (m->status_knockback != NULL)
-        status_knockback_handle_vec(m);
+    StatusKnockback *kb = m->status_knockback;
+    if (kb != NULL) {
+        int duration = status_knockback_get_duration(kb);
+        int time_elapsed = status_knockback_get_time_elapsed(kb);
+        if (time_elapsed < duration) {
+            Vector2 knockback = status_knockback_update(kb);
+            m->pos = Vector2Add(m->pos, knockback);
+        }
+        else {
+            free(kb);
+            m->status_knockback = NULL;
+        }
+    }
     else {
         m->mouth_size += m->mouth_dir * MOB_MOUTH_SPEED;
         if (m->mouth_size <= 0) {
@@ -58,32 +68,6 @@ void mob_update(Mob *m, Vector2 target, List *ms) {
     }
 }
 
-#define MOB_MOVE_SPEED 1.75
-void _mob_move(Mob *m, Vector2 target, List *ms) {
-    m->dir = Vector2Normalize(Vector2Subtract(target, m->pos));
-    Vector2 separate = _mob_separation_calculate(m, ms);
-    Vector2 steer = Vector2Add(m->dir, separate);
-    m->pos = Vector2Add(m->pos ,Vector2Scale(steer, MOB_MOVE_SPEED));
-}
-
-#define MOB_ATTACK_DAMAGE 2
-int mob_attack(Mob *m) {
-    if (m->can_attack) {
-        m->can_attack = false;
-        return MOB_ATTACK_DAMAGE;
-    }
-    else
-        return 0;
-}
-
-void mob_set_status_knockback(Mob *m, float distance, float angle, float duration) {
-    m->status_knockback = status_knockback_create(distance, angle, duration);
-}
-
-void mob_hp_reduce(Mob *m, int hp) {
-    m->hit_points -= hp;
-}
-
 #define MOB_COLOR RED
 void mob_draw(Mob *m) {
     float angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
@@ -91,19 +75,14 @@ void mob_draw(Mob *m) {
     DrawCircleSector(m->pos, MOB_RADIUS, angle - m->mouth_size, angle + m->mouth_size, 365, BACKGROUND_COLOR);
 }
 
-bool mob_is_dead(Mob *m) {
-    if (m->hit_points <= 0)
-        return true;
-    else
-        return false;
-}
 
-Vector2 mob_get_pos(Mob *m) {
-    return m->pos;
-}
-
-Vector2 mob_get_dir(Mob *m) {
-    return m->dir;
+#define MOB_MOVE_SPEED 1.75
+void _mob_move(Mob *m, Vector2 target, List *ms) {
+    //TODO: rotate instead of snap
+    m->dir = Vector2Normalize(Vector2Subtract(target, m->pos));
+    Vector2 separate = _mob_separation_calculate(m, ms);
+    Vector2 steer = Vector2Add(m->dir, separate);
+    m->pos = Vector2Add(m->pos ,Vector2Scale(steer, MOB_MOVE_SPEED));
 }
 
 Vector2 _mob_separation_calculate(Mob *m, List *ms) {
@@ -126,4 +105,37 @@ Vector2 _mob_separation_calculate(Mob *m, List *ms) {
         steer = Vector2Scale(steer, 1 / (float)count);
     }
     return steer;
+}
+
+#define MOB_ATTACK_DAMAGE 2
+int mob_attack(Mob *m) {
+    if (m->can_attack) {
+        m->can_attack = false;
+        return MOB_ATTACK_DAMAGE;
+    }
+    else
+        return 0;
+}
+
+void mob_hp_reduce(Mob *m, int hp) {
+    m->hit_points -= hp;
+}
+
+void mob_set_status_knockback(Mob *m, float distance, float angle, int duration) {
+    m->status_knockback = status_knockback_create(distance, angle, duration);
+}
+
+Vector2 mob_get_pos(Mob *m) {
+    return m->pos;
+}
+
+Vector2 mob_get_dir(Mob *m) {
+    return m->dir;
+}
+
+bool mob_is_dead(Mob *m) {
+    if (m->hit_points <= 0)
+        return true;
+    else
+        return false;
 }

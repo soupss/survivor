@@ -22,7 +22,7 @@ float EXPBAR_HEIGHT;
 void init_constants(int screen_width, int screen_height) {
     SCREEN_WIDTH = screen_width;
     SCREEN_HEIGHT = screen_height;
-    TANK_HULL_WIDTH = screen_width / 30.0;
+    TANK_HULL_WIDTH = screen_width / 40.0;
     TANK_HULL_HEIGHT = TANK_HULL_WIDTH * 1.23;
     TANK_TRACK_WIDTH = TANK_HULL_WIDTH * 0.25;
     TANK_TURRET_RADIUS = TANK_HULL_WIDTH * 0.3;
@@ -30,9 +30,9 @@ void init_constants(int screen_width, int screen_height) {
     TANK_BARREL_WIDTH = BULLET_RADIUS * 1.8;
     TANK_BARREL_LENGTH = TANK_TURRET_RADIUS;
     TANK_HITBOX_RADIUS = TANK_HULL_WIDTH / 2;
-    MOB_RADIUS = screen_width / 70.0;
+    MOB_RADIUS = screen_width / 90.0;
     EXPORB_RADIUS = TANK_TURRET_RADIUS / 2.0;
-    EXPORB_PICKUPRANGE = TANK_HULL_HEIGHT * 2.5;
+    EXPORB_PICKUPRANGE = TANK_HULL_HEIGHT * 1.5;
     EXPBAR_WIDTH = screen_width;
     EXPBAR_HEIGHT = screen_height / 64.0;
 }

@@ -180,7 +180,7 @@ void collision_handle_tank(Tank *t, List *ms) {
                 tank_hp_reduce(t, dmg);
                 float kb_angle = Vector2Angle((Vector2){0, 1}, mob_get_dir(m));
                 float kb_distance = dmg * MOB_KNOCKBACK_DISTANCE_FACTOR;
-                float kb_duration = dmg * MOB_KNOCKBACK_DURATION_FACTOR;
+                int kb_duration = dmg * MOB_KNOCKBACK_DURATION_FACTOR;
                 tank_set_status_knockback(t, kb_distance, kb_angle, kb_duration);
             }
         }
@@ -195,11 +195,11 @@ void collision_handle_bullet(List *bs, List *ms, List *xps) {
             Mob *m = list_get(ms, i);
             Bullet *b = list_get(bs, y);
             if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
-                float dmg = bullet_get_damage(b);
+                int dmg = bullet_get_damage(b);
                 mob_hp_reduce(m, dmg);
                 float kb_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
                 float kb_distance = dmg * BULLET_KNOCKBACK_DISTANCE_FACTOR;
-                float kb_duration = dmg * BULLET_KNOCKBACK_DURATION_FACTOR;
+                int kb_duration = round(dmg * BULLET_KNOCKBACK_DURATION_FACTOR);
                 mob_set_status_knockback(m, kb_distance, kb_angle, kb_duration);
                 if (mob_is_dead(m)) {
                     ExpOrb *xp = exporb_create(mob_get_pos(m));
