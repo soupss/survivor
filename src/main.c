@@ -140,9 +140,9 @@ void input_handle(Tank *t) {
         tank_turret_rotate(t, 0);
 }
 
-#define MOB_SPAWN_DELAY 200
+#define MOB_SPAWN_DELAY 100
 void spawn_mob(List *ms) {
-    static int spawn_delta = 0;
+    static int spawn_delta = MOB_SPAWN_DELAY;
     if (spawn_delta >= MOB_SPAWN_DELAY) {
         Vector2 pos = {rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
         switch (rand() % 4) {
@@ -168,14 +168,20 @@ void spawn_mob(List *ms) {
 }
 
 #define TANK_HITBOX_FACTOR 1.2
+#define MOB_KNOCKBACK_DISTANCE_FACTOR 2
+#define MOB_KNOCKBACK_DURATION_FACTOR 1
 void collision_handle_tank(Tank *t, List *ms) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
         float tank_hitbox_radius = TANK_TURRET_RADIUS * TANK_HITBOX_FACTOR;
         if (CheckCollisionCircles(tank_get_pos(t), tank_hitbox_radius, mob_get_pos(m), MOB_RADIUS)) {
-            int damage = mob_attack(m);
-            if (damage != 0) {
-                tank_hp_reduce(t, damage);
+            int dmg = mob_attack(m);
+            if (dmg != 0) {
+                tank_hp_reduce(t, dmg);
+                float kb_angle = Vector2Angle((Vector2){0, 1}, mob_get_dir(m));
+                float kb_distance = dmg * MOB_KNOCKBACK_DISTANCE_FACTOR;
+                float kb_duration = dmg * MOB_KNOCKBACK_DURATION_FACTOR;
+                tank_set_status_knockback(t, kb_distance, kb_angle, kb_duration);
             }
         }
     }
@@ -191,10 +197,10 @@ void collision_handle_bullet(List *bs, List *ms, List *xps) {
             if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
                 float dmg = bullet_get_damage(b);
                 mob_hp_reduce(m, dmg);
-                float knockback_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
-                float knockback_distance = dmg * BULLET_KNOCKBACK_DISTANCE_FACTOR;
-                float knockback_duration = dmg * BULLET_KNOCKBACK_DURATION_FACTOR;
-                mob_set_status_knockback(m, knockback_distance, knockback_angle, knockback_duration);
+                float kb_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
+                float kb_distance = dmg * BULLET_KNOCKBACK_DISTANCE_FACTOR;
+                float kb_duration = dmg * BULLET_KNOCKBACK_DURATION_FACTOR;
+                mob_set_status_knockback(m, kb_distance, kb_angle, kb_duration);
                 if (mob_is_dead(m)) {
                     ExpOrb *xp = exporb_create(mob_get_pos(m));
                     list_insert(xps, xp);

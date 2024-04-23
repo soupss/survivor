@@ -102,6 +102,10 @@ Vector2 mob_get_pos(Mob *m) {
     return m->pos;
 }
 
+Vector2 mob_get_dir(Mob *m) {
+    return m->dir;
+}
+
 Vector2 _mob_separation_calculate(Mob *m, List *ms) {
     Vector2 steer = {0};
     int count = 0;

@@ -13,6 +13,7 @@ void tank_velocity_calculate(Tank *t, int dir);
 void tank_hull_rotate(Tank *t, int dir);
 void tank_turret_rotate(Tank *t, int dir);
 void tank_hp_reduce(Tank *t, int hp);
+void tank_set_status_knockback(Tank *t, float distance, float angle, float duration);
 void tank_draw(Tank *t);
 bool tank_is_dead(Tank *t);
 int tank_get_hp(Tank *t);

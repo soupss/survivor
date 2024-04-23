@@ -4,12 +4,14 @@
 #include "tank.h"
 #include <raymath.h>
 #include "util.h"
+#include "status.h"
 
 void _tank_shoot(Tank *t, List *bs);
 void _tank_hp_regenerate(Tank *t);
 
 struct Tank {
-    Rectangle hull_rec;
+    Rectangle rec;
+    StatusKnockback *status_knockback;
     Vector2 hull_dir;
     Vector2 velocity;
     float turret_radius;
@@ -21,7 +23,8 @@ struct Tank {
 Tank *tank_create(int x, int y) {
     Tank *t = malloc(sizeof(Tank));
     check_alloc(t);
-    t->hull_rec = (Rectangle){x, y, TANK_HULL_WIDTH, TANK_HULL_HEIGHT};
+    t->rec = (Rectangle){x, y, TANK_HULL_WIDTH, TANK_HULL_HEIGHT};
+    t->status_knockback = NULL;
     t->hull_dir = (Vector2){0, 1};
     t->velocity = (Vector2){0};
     t->turret_radius = TANK_TURRET_RADIUS;
@@ -36,20 +39,23 @@ void tank_destroy(Tank *t) {
     free(t);
 }
 
-#define TANK_MOVE_SPEED 3.5
+#define TANK_MOVE_SPEED 2.5
 void tank_update(Tank *t, List *bs) {
     if (Vector2Length(t->velocity) > 0) {
-        t->hull_rec.x += t->velocity.x * TANK_MOVE_SPEED;
-        t->hull_rec.y += t->velocity.y * TANK_MOVE_SPEED;
+        t->rec.x += t->velocity.x * TANK_MOVE_SPEED;
+        t->rec.y += t->velocity.y * TANK_MOVE_SPEED;
     }
     _tank_shoot(t, bs);
     _tank_hp_regenerate(t);
+    if (t->status_knockback != NULL) {
+        status_knockback_handle_rec(t);
+    }
     t->hurt_delta++;
 }
 
 #define TANK_MOVE_ACC 0.03
 #define TANK_MOVE_DEC 0.03
-#define TANK_VEL_STAB_RATE 0.2
+#define TANK_VEL_ROT_STAB_FACTOR 0.2
 void tank_velocity_calculate(Tank *t, int dir) {
     int dir_vel = 0;
     if (Vector2Length(t->velocity) != 0){
@@ -89,12 +95,12 @@ void tank_velocity_calculate(Tank *t, int dir) {
         dir_target = Vector2Rotate(dir_target, PI);
     float diff = Vector2Angle(t->velocity, dir_target);
     if (FloatEquals(diff, 0) == 0)
-        t->velocity = Vector2Rotate(t->velocity, TANK_VEL_STAB_RATE*diff);
+        t->velocity = Vector2Rotate(t->velocity, TANK_VEL_ROT_STAB_FACTOR*diff);
 }
 
-#define TANK_HULL_ROT_SPEED 0.08
-#define TANK_HULL_ROT_ACC 0.08
-#define TANK_HULL_ROT_DEC 0.16
+#define TANK_HULL_ROT_SPEED 0.05
+#define TANK_HULL_ROT_ACC 0.07
+#define TANK_HULL_ROT_DEC 0.14
 void tank_hull_rotate(Tank *t, int dir) {
     static int dir_curr = 0;
     static float momentum = 0;
@@ -127,8 +133,8 @@ void tank_hull_rotate(Tank *t, int dir) {
         t->hull_dir = Vector2Rotate(t->hull_dir, momentum * dir_curr * TANK_HULL_ROT_SPEED);
 }
 
-#define TANK_TURRET_ROT_SPEED 0.1
-#define TANK_TURRET_ROT_ACC 0.08
+#define TANK_TURRET_ROT_SPEED 0.08
+#define TANK_TURRET_ROT_ACC 0.05
 #define TANK_TURRET_ROT_DEC 0.12
 void tank_turret_rotate(Tank *t, int dir) {
     static int dir_curr = 0;
@@ -160,17 +166,21 @@ void tank_hp_reduce(Tank *t, int hp) {
         t->hit_points = 0;
 }
 
+void tank_set_status_knockback(Tank *t, float distance, float angle, float duration) {
+   t->status_knockback = status_knockback_create(distance, angle, duration);
+}
+
 #define TANK_HULL_COLOR DARKGREEN
 #define TANK_TRACK_COLOR DARKGRAY
 #define TANK_TURRET_COLOR GREEN
 void tank_draw(Tank *t) {
-    Vector2 hull_center = {t->hull_rec.width / 2, t->hull_rec.height / 2};
+    Vector2 hull_center = {t->rec.width / 2, t->rec.height / 2};
     float hull_rotation = -RAD2DEG * Vector2Angle(t->hull_dir, (Vector2){0, -1});
-    DrawRectanglePro(t->hull_rec, hull_center, hull_rotation, TANK_HULL_COLOR);
-    Rectangle track_rec = {t->hull_rec.x, t->hull_rec.y, TANK_TRACK_WIDTH, t->hull_rec.height};
+    DrawRectanglePro(t->rec, hull_center, hull_rotation, TANK_HULL_COLOR);
+    Rectangle track_rec = {t->rec.x, t->rec.y, TANK_TRACK_WIDTH, t->rec.height};
     DrawRectanglePro(track_rec, hull_center, hull_rotation, TANK_TRACK_COLOR);
     DrawRectanglePro(track_rec, hull_center, 180 + hull_rotation, TANK_TRACK_COLOR);
-    Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));
+    Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, t->rec.height / 2 - t->rec.width / 2));
     DrawCircleV(turret_pos, t->turret_radius, TANK_TURRET_COLOR);
     Vector2 barrel_pos = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH / 2 - TANK_TURRET_RADIUS * 0.05));
     Rectangle barrel_rec = {barrel_pos.x, barrel_pos.y, TANK_BARREL_WIDTH, TANK_BARREL_LENGTH};
@@ -191,7 +201,7 @@ int tank_get_hp(Tank *t) {
 }
 
 Vector2 tank_get_pos(Tank *t) {
-    return (Vector2){t->hull_rec.x, t->hull_rec.y};
+    return (Vector2){t->rec.x, t->rec.y};
 }
 
 #define TANK_SHOT_DELAY 60
@@ -199,7 +209,7 @@ void _tank_shoot(Tank *t, List *bs) {
     // TODO: recoil
     static int shot_delta = 0;
     if (shot_delta >= TANK_SHOT_DELAY) {
-        Vector2 turret_pos = Vector2Subtract((Vector2){t->hull_rec.x, t->hull_rec.y}, Vector2Scale(t->hull_dir, t->hull_rec.height / 2 - t->hull_rec.width / 2));
+        Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, t->rec.height / 2 - t->rec.width / 2));
         Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS / 2));
         Bullet *b = bullet_create(barrel_end, t->turret_dir);
         list_insert(bs, b);
