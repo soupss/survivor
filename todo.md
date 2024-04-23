@@ -1,5 +1,5 @@
 feat
-* blinking hurt screen
+* blinking hurt screen?
 * mobs separate from the player
 * barrel recoil
     * status_recoil
@@ -10,6 +10,7 @@ refactor
 * check for null pointers (ex mob_update target is null pointer)
     * what happens when tank disappears
 * explicit list names (bs -> bullets)
+* name variables with _vec
 
 build
 * port to web
@@ -18,7 +19,7 @@ build
 # game features
 
 * gameplay loop
-* sound
+* SOUND
 * menu
 * map / background
 * satisfying hits
@@ -33,7 +34,10 @@ build
 
 ## enemy types
 
+* elite enemies
 * ranged enemies
 * big slow enemy
 * small fast enemy
 * kamikaze enemy
+* enemy that spawns
+* enemy that buffs

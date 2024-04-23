@@ -22,7 +22,7 @@ struct Tank {
 
 Tank *tank_create(int x, int y) {
     Tank *t = malloc(sizeof(Tank));
-    check_alloc(t);
+    util_check_alloc(t);
     t->rec = (Rectangle){x, y, TANK_HULL_WIDTH, TANK_HULL_HEIGHT};
     t->status_knockback = NULL;
     t->hull_dir = (Vector2){0, 1};
@@ -39,11 +39,12 @@ void tank_destroy(Tank *t) {
     free(t);
 }
 
-#define TANK_MOVE_SPEED 2.5
-void tank_update(Tank *t, List *bs) {
+#define TANK_MOVE_SPEED 2
+void tank_update(Tank *t, List *bs, List *ms) {
     if (Vector2Length(t->velocity) > 0) {
-        t->rec.x += t->velocity.x * TANK_MOVE_SPEED;
-        t->rec.y += t->velocity.y * TANK_MOVE_SPEED;
+        Vector2 separation = util_separation_from_mobs(t->rec.x, t->rec.y, TANK_HITBOX_RADIUS, ms, 0.5);
+        t->rec.x += (t->velocity.x + separation.x) * TANK_MOVE_SPEED;
+        t->rec.y += (t->velocity.y + separation.y) * TANK_MOVE_SPEED;
     }
     StatusKnockback *kb = t->status_knockback;
     if (kb != NULL) {
@@ -128,7 +129,7 @@ void tank_velocity_calculate(Tank *t, int dir) {
         t->velocity = Vector2Rotate(t->velocity, TANK_VEL_ROT_STAB_FACTOR*diff);
 }
 
-#define TANK_HULL_ROT_SPEED 0.05
+#define TANK_HULL_ROT_SPEED 0.035
 #define TANK_HULL_ROT_ACC 0.07
 #define TANK_HULL_ROT_DEC 0.14
 void tank_hull_rotate(Tank *t, int dir) {
@@ -189,11 +190,11 @@ void tank_turret_rotate(Tank *t, int dir) {
         t->turret_dir = Vector2Rotate(t->turret_dir, momentum * dir_curr * TANK_TURRET_ROT_SPEED);
 }
 
-#define TANK_SHOT_DELAY 30
+#define TANK_SHOOT_DELAY 40
 void _tank_shoot(Tank *t, List *bs) {
     // TODO: recoil
     static int shot_delta = 0;
-    if (shot_delta >= TANK_SHOT_DELAY) {
+    if (shot_delta >= TANK_SHOOT_DELAY) {
         Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, t->rec.height / 2 - t->rec.width / 2));
         Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS / 2));
         Bullet *b = bullet_create(barrel_end, t->turret_dir);

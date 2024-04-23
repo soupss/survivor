@@ -13,7 +13,7 @@ struct StatusKnockback {
 
 StatusKnockback *status_knockback_create(float distance, float angle, int duration) {
     StatusKnockback *kb = malloc(sizeof(StatusKnockback));
-    check_alloc(kb);
+    util_check_alloc(kb);
     kb->distance = distance;
     kb->angle = angle;
     kb->duration = duration;

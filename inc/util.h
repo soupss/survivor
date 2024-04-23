@@ -3,6 +3,7 @@
 
 #include <raylib.h>
 #include <list.h>
+#include "tank.h"
 
 #define BACKGROUND_COLOR RAYWHITE
 #define EXP_COLOR SKYBLUE
@@ -23,8 +24,11 @@ extern float EXPORB_RADIUS;
 extern float EXPORB_PICKUPRANGE;
 extern float EXPBAR_WIDTH;
 extern float EXPBAR_HEIGHT;
-void init_constants(int screen_width, int screen_height);
-void check_alloc(void *p);
+void util_init_constants(int screen_width, int screen_height);
+void util_check_alloc(void *p);
+Vector2 util_separation_from_mobs_v(Vector2 pos, float radius, List *ms, float separation_factor);
+Vector2 util_separation_from_mobs(int x, int y, float radius, List *ms, float separation_factor);
+Vector2 util_separation_from_tank_v(Vector2 pos, float radius, Vector2 pos_tank, float separation_factor);
 Vector2 Vector2AddMagnitude(Vector2 v, float add);
 Vector2 Vector2SubtractMagnitude(Vector2 v, float subtract);
 

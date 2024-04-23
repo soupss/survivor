@@ -23,7 +23,7 @@ struct Mob {
 #define MOB_MOUTH_SIZE 50
 Mob *mob_create(Vector2 pos) {
     Mob *m = malloc(sizeof(Mob));
-    check_alloc(m);
+    util_check_alloc(m);
     m->pos = pos;
     m->dir = (Vector2){0, 1};
     m->hit_points = MOB_MAX_HP;
@@ -55,6 +55,7 @@ void mob_update(Mob *m, Vector2 target, List *ms) {
         }
     }
     else {
+        _mob_move(m, target, ms);
         m->mouth_size += m->mouth_dir * MOB_MOUTH_SPEED;
         if (m->mouth_size <= 0) {
             m->mouth_dir = 1;
@@ -64,7 +65,6 @@ void mob_update(Mob *m, Vector2 target, List *ms) {
             m->mouth_dir = -1;
             m->can_attack = true;
         }
-        _mob_move(m, target, ms);
     }
 }
 
@@ -75,36 +75,16 @@ void mob_draw(Mob *m) {
     DrawCircleSector(m->pos, MOB_RADIUS, angle - m->mouth_size, angle + m->mouth_size, 365, BACKGROUND_COLOR);
 }
 
-
-#define MOB_MOVE_SPEED 1.75
+#define MOB_MOVE_SPEED 1.4
 void _mob_move(Mob *m, Vector2 target, List *ms) {
     //TODO: rotate instead of snap
-    m->dir = Vector2Normalize(Vector2Subtract(target, m->pos));
-    Vector2 separate = _mob_separation_calculate(m, ms);
-    Vector2 steer = Vector2Add(m->dir, separate);
+    Vector2 steer = util_separation_from_mobs_v(m->pos, MOB_RADIUS, ms, 0.5);
+    Vector2 d_vec = Vector2Subtract(target, m->pos);
+    m->dir = Vector2Normalize(d_vec);
+    float d = Vector2Length(d_vec);
+    if (d > MOB_RADIUS + TANK_HITBOX_RADIUS)
+        steer = Vector2Add(m->dir, steer);
     m->pos = Vector2Add(m->pos ,Vector2Scale(steer, MOB_MOVE_SPEED));
-}
-
-Vector2 _mob_separation_calculate(Mob *m, List *ms) {
-    Vector2 steer = {0};
-    int count = 0;
-    for (int i = 0; i < list_len(ms); i++) {
-        Mob *other = list_get(ms, i);
-        if (m == other)
-            continue;
-        Vector2 diff = Vector2Subtract(m->pos, other->pos);
-        float d = Vector2Length(diff);
-        if (d < MOB_RADIUS * 2) {
-            float separation = (0.5 * MOB_RADIUS) / d;
-            diff = Vector2Scale(Vector2Normalize(diff), separation);
-            steer = Vector2Add(steer, diff);
-            count++;
-        }
-    }
-    if (count > 0) {
-        steer = Vector2Scale(steer, 1 / (float)count);
-    }
-    return steer;
 }
 
 #define MOB_ATTACK_DAMAGE 2

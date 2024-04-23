@@ -11,9 +11,9 @@ struct List {
 
 List *list_create(int cap) {
     List *l = malloc(sizeof(List));
-    check_alloc(l);
+    util_check_alloc(l);
     l->arr = malloc(cap * sizeof(void*));
-    check_alloc(l->arr);
+    util_check_alloc(l->arr);
     l->len = 0;
     l->cap = cap;
     return l;
@@ -33,7 +33,7 @@ void list_insert(List *l, void *el) {
     if (l->len == l->cap) {
         l->cap *= 2;
         l->arr = realloc(l->arr, l->cap * sizeof(void*));
-        check_alloc(l->arr);
+        util_check_alloc(l->arr);
     }
     l->arr[l->len] = el;
     l->len++;

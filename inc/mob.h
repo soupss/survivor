@@ -3,6 +3,7 @@
 
 #include <raylib.h>
 #include "list.h"
+#include "tank.h"
 
 typedef struct Mob Mob;
 Mob *mob_create(Vector2 pos);

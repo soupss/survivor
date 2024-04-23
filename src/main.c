@@ -45,7 +45,7 @@ int main() {
 void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
     InitWindow(0, 0, "Tank Survival");
     ToggleFullscreen();
-    init_constants(GetScreenWidth(), GetScreenHeight());
+    util_init_constants(GetScreenWidth(), GetScreenHeight());
     SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     SetTargetFPS(FPS_TARGET);
     srand(time(NULL));
@@ -59,7 +59,7 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     if (!tank_is_dead(t)) {
         input_handle(t);
-        tank_update(t, bs);
+        tank_update(t, bs, ms);
         spawn_mob(ms);
     }
     for (int i = 0; i < list_len(bs); i++) {
@@ -74,19 +74,19 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     for (int i = 0; i < list_len(xps); i++)
         exporb_update(list_get(xps, i), tank_get_pos(t));
     collision_handle_bullet(bs, ms, xps);
-    collision_handle_exporb(xps, t, exp);
     collision_handle_tank(t, ms);
+    collision_handle_exporb(xps, t, exp);
 }
 
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
     BeginDrawing();
     ClearBackground(BACKGROUND_COLOR);
+    for (int i = 0; i < list_len(xps); i++)
+        exporb_draw(list_get(xps, i));
     for (int i = 0; i < list_len(ms); i++)
         mob_draw(list_get(ms, i));
     for (int i = 0; i < list_len(bs); i++)
         bullet_draw(list_get(bs, i));
-    for (int i = 0; i < list_len(xps); i++)
-        exporb_draw(list_get(xps, i));
     tank_draw(t);
     draw_expbar(exp);
     draw_hurtscreen(tank_get_hp(t));
@@ -140,7 +140,7 @@ void input_handle(Tank *t) {
         tank_turret_rotate(t, 0);
 }
 
-#define MOB_SPAWN_DELAY 100
+#define MOB_SPAWN_DELAY 120
 void spawn_mob(List *ms) {
     static int spawn_delta = MOB_SPAWN_DELAY;
     if (spawn_delta >= MOB_SPAWN_DELAY) {
@@ -167,14 +167,12 @@ void spawn_mob(List *ms) {
         spawn_delta++;
 }
 
-#define TANK_HITBOX_FACTOR 1.2
 #define MOB_KNOCKBACK_DISTANCE_FACTOR 2
 #define MOB_KNOCKBACK_DURATION_FACTOR 1
 void collision_handle_tank(Tank *t, List *ms) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        float tank_hitbox_radius = TANK_TURRET_RADIUS * TANK_HITBOX_FACTOR;
-        if (CheckCollisionCircles(tank_get_pos(t), tank_hitbox_radius, mob_get_pos(m), MOB_RADIUS)) {
+        if (CheckCollisionCircles(tank_get_pos(t), TANK_HITBOX_RADIUS, mob_get_pos(m), MOB_RADIUS)) {
             int dmg = mob_attack(m);
             if (dmg != 0) {
                 tank_hp_reduce(t, dmg);

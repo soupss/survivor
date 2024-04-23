@@ -11,7 +11,7 @@ struct ExpOrb {
 #define EXPORB_EXP_POINTS 1
 ExpOrb *exporb_create(Vector2 pos) {
     ExpOrb *xp = malloc(sizeof(ExpOrb));
-    check_alloc(xp);
+    util_check_alloc(xp);
     xp->pos = pos;
     xp->exp_points = EXPORB_EXP_POINTS;
     return xp;
