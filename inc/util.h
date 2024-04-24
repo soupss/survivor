@@ -16,7 +16,7 @@ extern float TANK_HULL_HEIGHT;
 extern float TANK_TRACK_WIDTH;
 extern float TANK_TURRET_RADIUS;
 extern float TANK_BARREL_WIDTH;
-extern float TANK_BARREL_LENGTH;
+extern float TANK_BARREL_MAX_LENGTH;
 extern float TANK_HITBOX_RADIUS;
 extern float BULLET_RADIUS;
 extern float MOB_RADIUS;
@@ -28,7 +28,6 @@ void util_init_constants(int screen_width, int screen_height);
 void util_check_alloc(void *p);
 Vector2 util_separation_from_mobs_v(Vector2 pos, float radius, List *ms, float separation_factor);
 Vector2 util_separation_from_mobs(int x, int y, float radius, List *ms, float separation_factor);
-Vector2 util_separation_from_tank_v(Vector2 pos, float radius, Vector2 pos_tank, float separation_factor);
 Vector2 Vector2AddMagnitude(Vector2 v, float add);
 Vector2 Vector2SubtractMagnitude(Vector2 v, float subtract);
 

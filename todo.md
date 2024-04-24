@@ -1,12 +1,9 @@
 feat
-* blinking hurt screen?
-* mobs separate from the player
-* barrel recoil
-    * status_recoil
 * tank out of bounds check
 
 refactor
 * const function args
+* unsigned?
 * check for null pointers (ex mob_update target is null pointer)
     * what happens when tank disappears
 * explicit list names (bs -> bullets)

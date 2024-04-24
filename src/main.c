@@ -64,7 +64,7 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
     }
     for (int i = 0; i < list_len(bs); i++) {
         Bullet *b = list_get(bs, i);
-        if (bullet_out_of_bounds(b))
+        if (bullet_is_out_of_bounds(b) || bullet_get_damage(b) <= 0)
             bullet_destroy(list_delete(bs, i));
         else
             bullet_update(b);
@@ -140,7 +140,7 @@ void input_handle(Tank *t) {
         tank_turret_rotate(t, 0);
 }
 
-#define MOB_SPAWN_DELAY 120
+#define MOB_SPAWN_DELAY 150
 void spawn_mob(List *ms) {
     static int spawn_delta = MOB_SPAWN_DELAY;
     if (spawn_delta >= MOB_SPAWN_DELAY) {

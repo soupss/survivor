@@ -38,8 +38,8 @@ void bullet_draw(Bullet *b) {
 }
 
 #define BULLET_DAMAGE 4
-#define BULLET_FULLDMG_RANGE SCREEN_HEIGHT * 0.8
-#define BULLET_DAMAGE_DROPOFF_FACTOR 0.002
+#define BULLET_FULLDMG_RANGE SCREEN_HEIGHT * 0.2
+#define BULLET_DAMAGE_DROPOFF_FACTOR 0.025
 int bullet_get_damage(Bullet *b) {
     if (b->distance_traveled >= BULLET_FULLDMG_RANGE) {
         double d = b->distance_traveled - BULLET_FULLDMG_RANGE;
@@ -49,11 +49,12 @@ int bullet_get_damage(Bullet *b) {
         return BULLET_DAMAGE;
 }
 
-bool bullet_out_of_bounds(Bullet *b) {
-    if (b->pos.x < 0 - b->radius ||
-        b->pos.x > SCREEN_WIDTH + b->radius ||
-        b->pos.y < 0 - b->radius ||
-        b->pos.y > SCREEN_HEIGHT + b->radius) return true;
+bool bullet_is_out_of_bounds(Bullet *b) {
+    if (b->pos.x - b->radius < 0 ||
+        b->pos.x + b->radius > SCREEN_WIDTH ||
+        b->pos.y - b->radius < 0 ||
+        b->pos.y + b->radius > SCREEN_HEIGHT)
+        return true;
     else
         return false;
 }

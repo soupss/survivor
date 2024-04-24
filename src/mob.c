@@ -19,7 +19,7 @@ struct Mob {
     bool can_attack;
 };
 
-#define MOB_MAX_HP 10
+#define MOB_MAX_HP 15
 #define MOB_MOUTH_SIZE 50
 Mob *mob_create(Vector2 pos) {
     Mob *m = malloc(sizeof(Mob));
@@ -39,20 +39,13 @@ void mob_destroy(Mob *m) {
     free(m);
 }
 
-#define MOB_MOUTH_SPEED 2
+#define MOB_MOUTH_SPEED 1
 void mob_update(Mob *m, Vector2 target, List *ms) {
-    StatusKnockback *kb = m->status_knockback;
-    if (kb != NULL) {
-        int duration = status_knockback_get_duration(kb);
-        int time_elapsed = status_knockback_get_time_elapsed(kb);
-        if (time_elapsed < duration) {
-            Vector2 knockback = status_knockback_update(kb);
-            m->pos = Vector2Add(m->pos, knockback);
-        }
-        else {
-            free(kb);
-            m->status_knockback = NULL;
-        }
+    if (m->status_knockback != NULL)
+        status_knockback_update(&m->status_knockback);
+    if (m->status_knockback != NULL) {
+        Vector2 knockback = status_knockback_get(m->status_knockback);
+        m->pos = Vector2Add(m->pos, knockback);
     }
     else {
         _mob_move(m, target, ms);
@@ -87,7 +80,7 @@ void _mob_move(Mob *m, Vector2 target, List *ms) {
     m->pos = Vector2Add(m->pos ,Vector2Scale(steer, MOB_MOVE_SPEED));
 }
 
-#define MOB_ATTACK_DAMAGE 2
+#define MOB_ATTACK_DAMAGE 4
 int mob_attack(Mob *m) {
     if (m->can_attack) {
         m->can_attack = false;

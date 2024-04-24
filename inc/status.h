@@ -5,8 +5,12 @@
 
 typedef struct StatusKnockback StatusKnockback;
 StatusKnockback *status_knockback_create(float distance, float angle, int duration);
-Vector2 status_knockback_update(StatusKnockback *kb);
-int status_knockback_get_duration(StatusKnockback *kb);
-int status_knockback_get_time_elapsed(StatusKnockback *kb);
+void status_knockback_update(StatusKnockback **s_kb_ptr);
+Vector2 status_knockback_get(StatusKnockback *s_kb);
+
+typedef struct StatusRecoil StatusRecoil;
+StatusRecoil *status_recoil_create(float kickback, int duration);
+void status_recoil_update(StatusRecoil **s_r_ptr);
+float status_recoil_get(StatusRecoil *s_r);
 
 #endif

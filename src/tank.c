@@ -8,15 +8,17 @@
 
 void _tank_shoot(Tank *t, List *bs);
 void _tank_hp_regenerate(Tank *t);
+void _tank_contain_in_map(Tank *t);
 
 struct Tank {
     Rectangle rec;
-    StatusKnockback *status_knockback;
     Vector2 hull_dir;
     Vector2 velocity;
     float turret_radius;
     Vector2 turret_dir;
     int hit_points;
+    StatusKnockback *status_knockback;
+    StatusRecoil *status_recoil;
     int hurt_delta;
 };
 
@@ -24,12 +26,13 @@ Tank *tank_create(int x, int y) {
     Tank *t = malloc(sizeof(Tank));
     util_check_alloc(t);
     t->rec = (Rectangle){x, y, TANK_HULL_WIDTH, TANK_HULL_HEIGHT};
-    t->status_knockback = NULL;
     t->hull_dir = (Vector2){0, 1};
     t->velocity = (Vector2){0};
     t->turret_radius = TANK_TURRET_RADIUS;
     t->turret_dir = (Vector2){0, 1};
     t->hit_points = TANK_MAX_HP;
+    t->status_knockback = NULL;
+    t->status_recoil = NULL;
     t->hurt_delta = 0;
     return t;
 }
@@ -42,24 +45,22 @@ void tank_destroy(Tank *t) {
 #define TANK_MOVE_SPEED 2
 void tank_update(Tank *t, List *bs, List *ms) {
     if (Vector2Length(t->velocity) > 0) {
-        Vector2 separation = util_separation_from_mobs(t->rec.x, t->rec.y, TANK_HITBOX_RADIUS, ms, 0.5);
-        t->rec.x += (t->velocity.x + separation.x) * TANK_MOVE_SPEED;
-        t->rec.y += (t->velocity.y + separation.y) * TANK_MOVE_SPEED;
+        t->rec.x += t->velocity.x * TANK_MOVE_SPEED;
+        t->rec.y += t->velocity.y * TANK_MOVE_SPEED;
     }
-    StatusKnockback *kb = t->status_knockback;
-    if (kb != NULL) {
-        int duration = status_knockback_get_duration(kb);
-        int time_elapsed = status_knockback_get_time_elapsed(kb);
-        if (time_elapsed < duration) {
-            Vector2 knockback = status_knockback_update(kb);
-            t->rec.x += knockback.x;
-            t->rec.y += knockback.y;
-        }
-        else {
-            free(kb);
-            t->status_knockback = NULL;
-        }
+    Vector2 separation = util_separation_from_mobs(t->rec.x, t->rec.y, TANK_HITBOX_RADIUS, ms, 0.5);
+    t->rec.x += separation.x * TANK_MOVE_SPEED;
+    t->rec.y += separation.y * TANK_MOVE_SPEED;
+    _tank_contain_in_map(t);
+    if (t->status_knockback != NULL)
+        status_knockback_update(&t->status_knockback);
+    if (t->status_knockback != NULL) {
+        Vector2 kb = status_knockback_get(t->status_knockback);
+        t->rec.x += kb.x;
+        t->rec.y += kb.y;
     }
+    if (t->status_recoil != NULL)
+        status_recoil_update(&t->status_recoil);
     _tank_shoot(t, bs);
     _tank_hp_regenerate(t);
     t->hurt_delta++;
@@ -77,9 +78,11 @@ void tank_draw(Tank *t) {
     DrawRectanglePro(track_rec, hull_center, 180 + hull_rotation, TANK_TRACK_COLOR);
     Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, t->rec.height / 2 - t->rec.width / 2));
     DrawCircleV(turret_pos, t->turret_radius, TANK_TURRET_COLOR);
-    Vector2 barrel_pos = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH / 2 - TANK_TURRET_RADIUS * 0.05));
-    Rectangle barrel_rec = {barrel_pos.x, barrel_pos.y, TANK_BARREL_WIDTH, TANK_BARREL_LENGTH};
-    Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, TANK_BARREL_LENGTH / 2};
+    float recoil = status_recoil_get(t->status_recoil);
+    float barrel_length = TANK_BARREL_MAX_LENGTH - recoil;
+    Vector2 barrel_pos = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + barrel_length / 2 - TANK_TURRET_RADIUS * 0.05));
+    Rectangle barrel_rec = {barrel_pos.x, barrel_pos.y, TANK_BARREL_WIDTH, barrel_length};
+    Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, barrel_length / 2};
     float turret_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
     DrawRectanglePro(barrel_rec, barrel_center, turret_rotation, TANK_TURRET_COLOR);
 }
@@ -191,15 +194,19 @@ void tank_turret_rotate(Tank *t, int dir) {
 }
 
 #define TANK_SHOOT_DELAY 40
+#define TANK_SHOOT_RECOIL_KICKBACK_FACTOR 0.5
+#define TANK_SHOOT_RECOIL_DURATION_FACTOR 0.3
 void _tank_shoot(Tank *t, List *bs) {
-    // TODO: recoil
     static int shot_delta = 0;
     if (shot_delta >= TANK_SHOOT_DELAY) {
         Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, t->rec.height / 2 - t->rec.width / 2));
-        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS / 2));
+        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_MAX_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS * 2));
         Bullet *b = bullet_create(barrel_end, t->turret_dir);
         list_insert(bs, b);
         shot_delta = 0;
+        float r_kickback = TANK_SHOOT_RECOIL_KICKBACK_FACTOR * TANK_BARREL_MAX_LENGTH;
+        float r_duration = TANK_SHOOT_RECOIL_DURATION_FACTOR * TANK_SHOOT_DELAY; // depend on dmg
+        t->status_recoil = status_recoil_create(r_kickback, r_duration);
     }
     else
         shot_delta++;
@@ -220,6 +227,18 @@ void _tank_hp_regenerate(Tank *t) {
     }
     else
         regen_tick_delta = TANK_HEALTH_REGEN_TICK_DELAY;
+}
+
+void _tank_contain_in_map(Tank *t) {
+    float r = TANK_HITBOX_RADIUS;
+    if (t->rec.x - r < 0)
+        t->rec.x = r;
+    else if (t->rec.x + r > SCREEN_WIDTH)
+        t->rec.x = SCREEN_WIDTH - r;
+    else if (t->rec.y - r < 0)
+        t->rec.y = r;
+    else if (t->rec.y + r > SCREEN_HEIGHT)
+        t->rec.y = SCREEN_HEIGHT - r;
 }
 
 void tank_hp_reduce(Tank *t, int hp) {
