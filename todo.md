@@ -1,5 +1,14 @@
 feat
-* tank out of bounds check
+* sound loader
+* bullet size represent damage
+    * barrel size
+        * max barrel size
+* **upgrades**
+    * upgrade screen
+    * stats scaling
+        * limited upgrades per weapon
+* display upgrades
+    * attribute/upgrade icons
 
 refactor
 * const function args
@@ -15,19 +24,22 @@ build
 
 # game features
 
+* enemy types that fit theme
 * gameplay loop
 * SOUND
 * menu
 * map / background
-* satisfying hits
+* toggle autoshoot?
 
 ## weapon types
 
-* piercing sniper weapon
-* grenade launcher weapon
+* piercing sniper
+* grenade launcher
+* close range shotgun
 * flamethrower
 * mines
 * spikes
+* auto-aim variants
 
 ## enemy types
 

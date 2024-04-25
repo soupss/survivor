@@ -6,7 +6,7 @@
 #include "util.h"
 #include "status.h"
 
-void _tank_shoot(Tank *t, List *bs);
+void _tank_shoot(Tank *t, List *bs, SoundEffects *sfx);
 void _tank_hp_regenerate(Tank *t);
 void _tank_contain_in_map(Tank *t);
 
@@ -43,7 +43,7 @@ void tank_destroy(Tank *t) {
 }
 
 #define TANK_MOVE_SPEED 2
-void tank_update(Tank *t, List *bs, List *ms) {
+void tank_update(Tank *t, List *bs, List *ms, SoundEffects *sfx) {
     if (Vector2Length(t->velocity) > 0) {
         t->rec.x += t->velocity.x * TANK_MOVE_SPEED;
         t->rec.y += t->velocity.y * TANK_MOVE_SPEED;
@@ -61,7 +61,7 @@ void tank_update(Tank *t, List *bs, List *ms) {
     }
     if (t->status_recoil != NULL)
         status_recoil_update(&t->status_recoil);
-    _tank_shoot(t, bs);
+    _tank_shoot(t, bs, sfx);
     _tank_hp_regenerate(t);
     t->hurt_delta++;
 }
@@ -85,6 +85,7 @@ void tank_draw(Tank *t) {
     Vector2 barrel_center = {TANK_BARREL_WIDTH / 2, barrel_length / 2};
     float turret_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
     DrawRectanglePro(barrel_rec, barrel_center, turret_rotation, TANK_TURRET_COLOR);
+    DrawFPS(1, 0);
 }
 
 #define TANK_MOVE_ACC 0.03
@@ -195,17 +196,21 @@ void tank_turret_rotate(Tank *t, int dir) {
 
 #define TANK_SHOOT_DELAY 40
 #define TANK_SHOOT_RECOIL_KICKBACK_FACTOR 0.5
-#define TANK_SHOOT_RECOIL_DURATION_FACTOR 0.3
-void _tank_shoot(Tank *t, List *bs) {
+#define TANK_SHOOT_RECOIL_DURATION_FACTOR 0.5
+#define TANK_SHOOT_RECOIL_DURATION_FACTOR2 0.5
+void _tank_shoot(Tank *t, List *bs, SoundEffects *sfx) {
     static int shot_delta = 0;
     if (shot_delta >= TANK_SHOOT_DELAY) {
+        PlaySound(sfx->shoot);
         Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, t->rec.height / 2 - t->rec.width / 2));
         Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, t->turret_radius + TANK_BARREL_MAX_LENGTH - TANK_TURRET_RADIUS * 0.05 - BULLET_RADIUS * 2));
         Bullet *b = bullet_create(barrel_end, t->turret_dir);
         list_insert(bs, b);
         shot_delta = 0;
         float r_kickback = TANK_SHOOT_RECOIL_KICKBACK_FACTOR * TANK_BARREL_MAX_LENGTH;
-        float r_duration = TANK_SHOOT_RECOIL_DURATION_FACTOR * TANK_SHOOT_DELAY; // depend on dmg
+        float dmg = bullet_get_damage(b);
+        //TODO: math
+        float r_duration = TANK_SHOOT_RECOIL_DURATION_FACTOR * TANK_SHOOT_DELAY + TANK_SHOOT_RECOIL_DURATION_FACTOR2 * dmg; // depend on dmg
         t->status_recoil = status_recoil_create(r_kickback, r_duration);
     }
     else

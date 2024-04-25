@@ -9,16 +9,17 @@
 #include "exporb.h"
 #include "list.h"
 #include "util.h"
+#include "sound_effects.h"
 
-void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp);
-void update(Tank *t, List *bs, List *ms, List *xps, float *exp);
+void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEffects **sfx);
+void update(Tank *t, List *bs, List *ms, List *xps, float *exp, SoundEffects *sfx);
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp);
-void terminate(Tank *t, List *bs, List *ms, List *xps);
+void terminate(Tank *t, List *bs, List *ms, List *xps, SoundEffects *sfx);
 void input_handle(Tank *t);
 void spawn_mob(List *ms);
-void collision_handle_tank(Tank *t, List *ms);
-void collision_handle_bullet(List *bs, List *ms, List *xps);
-void collision_handle_exporb(List *xps, Tank *t, float *total_exp);
+void collision_handle_tank(Tank *t, List *ms, SoundEffects *sfx);
+void collision_handle_bullet(List *bs, List *ms, List *xps, SoundEffects *sfx);
+void collision_handle_exporb(List *xps, Tank *t, float *total_exp, SoundEffects *sfx);
 void draw_expbar(float exp);
 void draw_hurtscreen(int tank_hp);
 void draw_deathscreen();
@@ -29,12 +30,13 @@ int main() {
     List *ms;   // mobs
     List *xps;  // exp orbs
     float exp;
-    initialize(&t, &bs, &ms, &xps, &exp);
+    SoundEffects *sfx;
+    initialize(&t, &bs, &ms, &xps, &exp, &sfx);
     while (!WindowShouldClose()) {
-        update(t, bs, ms, xps, &exp);
+        update(t, bs, ms, xps, &exp, sfx);
         draw(t, bs, ms, xps, exp);
     }
-    terminate(t, bs, ms, xps);
+    terminate(t, bs, ms, xps, sfx);
     return 0;
 }
 
@@ -42,13 +44,14 @@ int main() {
 #define MAX_BULLETS_INITIAL 5
 #define MAX_MOBS_INITIAL 5
 #define MAX_EXPS_INITIAL 5
-void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
+void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEffects **sfx) {
     InitWindow(0, 0, "Tank Survival");
     ToggleFullscreen();
     util_init_constants(GetScreenWidth(), GetScreenHeight());
     SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     SetTargetFPS(FPS_TARGET);
     srand(time(NULL));
+    *sfx = sound_effects_create();
     *t = tank_create(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
     *bs = list_create(MAX_BULLETS_INITIAL);
     *ms = list_create(MAX_MOBS_INITIAL);
@@ -56,10 +59,10 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp) {
     *exp = 0;
 }
 
-void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
+void update(Tank *t, List *bs, List *ms, List *xps, float *exp, SoundEffects *sfx) {
     if (!tank_is_dead(t)) {
         input_handle(t);
-        tank_update(t, bs, ms);
+        tank_update(t, bs, ms, sfx);
         spawn_mob(ms);
     }
     for (int i = 0; i < list_len(bs); i++) {
@@ -73,9 +76,9 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp) {
         mob_update(list_get(ms, i), tank_get_pos(t), ms);
     for (int i = 0; i < list_len(xps); i++)
         exporb_update(list_get(xps, i), tank_get_pos(t));
-    collision_handle_bullet(bs, ms, xps);
-    collision_handle_tank(t, ms);
-    collision_handle_exporb(xps, t, exp);
+    collision_handle_bullet(bs, ms, xps, sfx);
+    collision_handle_tank(t, ms, sfx);
+    collision_handle_exporb(xps, t, exp, sfx);
 }
 
 void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
@@ -95,12 +98,13 @@ void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
     EndDrawing();
 }
 
-void terminate(Tank *t, List *bs, List *ms, List *xps) {
-    CloseWindow();
+void terminate(Tank *t, List *bs, List *ms, List *xps, SoundEffects *sfx) {
     tank_destroy(t);
     list_destroy(bs);
     list_destroy(ms);
     list_destroy(xps);
+    sound_effects_destroy(sfx);
+    CloseWindow();
 }
 
 void input_handle(Tank *t) {
@@ -169,12 +173,13 @@ void spawn_mob(List *ms) {
 
 #define MOB_KNOCKBACK_DISTANCE_FACTOR 2
 #define MOB_KNOCKBACK_DURATION_FACTOR 1
-void collision_handle_tank(Tank *t, List *ms) {
+void collision_handle_tank(Tank *t, List *ms, SoundEffects *sfx) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
         if (CheckCollisionCircles(tank_get_pos(t), TANK_HITBOX_RADIUS, mob_get_pos(m), MOB_RADIUS)) {
             int dmg = mob_attack(m);
             if (dmg != 0) {
+                PlaySound(sfx->hurt);
                 tank_hp_reduce(t, dmg);
                 float kb_angle = Vector2Angle((Vector2){0, 1}, mob_get_dir(m));
                 float kb_distance = dmg * MOB_KNOCKBACK_DISTANCE_FACTOR;
@@ -186,13 +191,14 @@ void collision_handle_tank(Tank *t, List *ms) {
 }
 
 #define BULLET_KNOCKBACK_DISTANCE_FACTOR 3
-#define BULLET_KNOCKBACK_DURATION_FACTOR 1.5
-void collision_handle_bullet(List *bs, List *ms, List *xps) {
+#define BULLET_KNOCKBACK_DURATION_FACTOR 1
+void collision_handle_bullet(List *bs, List *ms, List *xps, SoundEffects *sfx) {
     for (int i = 0; i < list_len(ms); i++) {
         for (int y = 0; y < list_len(bs); y++) {
             Mob *m = list_get(ms, i);
             Bullet *b = list_get(bs, y);
             if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
+                PlaySound(sfx->hit);
                 int dmg = bullet_get_damage(b);
                 mob_hp_reduce(m, dmg);
                 float kb_angle = Vector2Angle((Vector2){0, 1}, bullet_get_dir(b));
@@ -213,10 +219,11 @@ void collision_handle_bullet(List *bs, List *ms, List *xps) {
     }
 }
 
-void collision_handle_exporb(List *xps, Tank *t, float *exp) {
+void collision_handle_exporb(List *xps, Tank *t, float *exp, SoundEffects *sfx) {
     for (int i = 0; i < list_len(xps); i++) {
         ExpOrb *xp = list_get(xps, i);
         if (CheckCollisionCircles(exporb_get_pos(xp), EXPORB_RADIUS, tank_get_pos(t), TANK_TURRET_RADIUS)) {
+            PlaySound(sfx->exp);
             xp = list_delete(xps, i);
             (*exp) += exporb_get_points(xp);
             exporb_destroy(xp);
@@ -237,7 +244,8 @@ void draw_hurtscreen(int tank_hp) {
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(MAROON, alpha));
 }
 
-#define DS_FADEIN_SPEED 0.003
+#define DS_ALPHA_DEFAULT -0.2
+#define DS_FADEIN_SPEED 0.004
 #define DS_FONT_SIZE 100
 #define DS_FONT_SPACING 10
 void draw_deathscreen() {
@@ -245,7 +253,7 @@ void draw_deathscreen() {
     Vector2 msg_size = MeasureTextEx(GetFontDefault(), msg, DS_FONT_SIZE, DS_FONT_SPACING);
     Vector2 screen_mid = {SCREEN_WIDTH / (float)2, SCREEN_HEIGHT / (float)2};
     Vector2 pos = Vector2Subtract(screen_mid, Vector2Scale(msg_size, 0.5));
-    static float alpha = -0.3;
+    static float alpha = DS_ALPHA_DEFAULT;
     DrawTextEx(GetFontDefault(), msg, pos, DS_FONT_SIZE, DS_FONT_SPACING, Fade(BLACK, alpha));
     if (alpha <= 1) {
         alpha += DS_FADEIN_SPEED;
