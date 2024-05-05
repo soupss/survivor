@@ -1,52 +1,47 @@
-feat
-* sound loader
-* bullet size represent damage
-    * barrel size
-        * max barrel size
-* **upgrades**
-    * upgrade screen
-    * stats scaling
-        * limited upgrades per weapon
-* display upgrades
-    * attribute/upgrade icons
+# sprites
 
-refactor
-* const function args
-* unsigned?
-* check for null pointers (ex mob_update target is null pointer)
-    * what happens when tank disappears
-* explicit list names (bs -> bullets)
-* name variables with _vec
+* mob attack
 
-build
-* port to web
-* errors
+# MAJOR
 
-# game features
+* mobs
+    * mob theme / mob types
+    * mob spawn system
+* tank
+    * turret with weapon slots
+    * tank with weapon slots
+* floors
+    * create a floor with mobs
+    * camera
+    * minimap
+* level up
+    * display upgrades
+    * equip upgrades
 
-* enemy types that fit theme
-* gameplay loop
-* SOUND
-* menu
-* map / background
-* toggle autoshoot?
+## minor
 
-## weapon types
+* animations
+    * tank tracks
+    * recoil
+    * death animation (mob + tank)
+* elite mobs
+    * drop upgrade
+* tank customization
+    * edit turret/hull
+    * move/edit weapons
 
-* piercing sniper
-* grenade launcher
-* close range shotgun
-* flamethrower
-* mines
-* spikes
-* auto-aim variants
+### misc
 
-## enemy types
-
-* elite enemies
-* ranged enemies
-* big slow enemy
-* small fast enemy
-* kamikaze enemy
-* enemy that spawns
-* enemy that buffs
+* weapon types
+    * barrel weapons
+        * piercing sniper
+        * grenade launcher
+        * close range shotgun
+        * flamethrower
+    * auto-aim variants
+    * drones
+    * mines
+    * spikes
+    * oil spill
+* mob types
+    * ...

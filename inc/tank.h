@@ -5,12 +5,13 @@
 #include "bullet.h"
 #include "list.h"
 #include "sound_effects.h"
+#include "sprites.h"
 
 typedef struct Tank Tank;
 Tank *tank_create(int x, int y);
 void tank_destroy(Tank *t);
 void tank_update(Tank *t, List *bs, List *ms, SoundEffects *sfx);
-void tank_draw(Tank *t);
+void tank_draw(Tank *t, Sprites *ss);
 void tank_velocity_calculate(Tank *t, int dir);
 void tank_hull_rotate(Tank *t, int dir);
 void tank_turret_rotate(Tank *t, int dir);

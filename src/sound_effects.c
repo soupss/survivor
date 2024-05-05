@@ -15,6 +15,9 @@ SoundEffects *sound_effects_create() {
 
 void sound_effects_destroy(SoundEffects *sfx) {
     UnloadSound(sfx->shoot);
+    UnloadSound(sfx->hurt);
+    UnloadSound(sfx->hit);
+    UnloadSound(sfx->exp);
     free(sfx);
     CloseAudioDevice();
 }

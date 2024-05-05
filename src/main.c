@@ -10,11 +10,12 @@
 #include "list.h"
 #include "util.h"
 #include "sound_effects.h"
+#include "sprites.h"
 
-void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEffects **sfx);
+void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEffects **sfx, Sprites **ss);
 void update(Tank *t, List *bs, List *ms, List *xps, float *exp, SoundEffects *sfx);
-void draw(Tank *t, List *bs, List *ms, List *xps, float exp);
-void terminate(Tank *t, List *bs, List *ms, List *xps, SoundEffects *sfx);
+void draw(Tank *t, List *bs, List *ms, List *xps, float exp, Sprites *ss);
+void terminate(Tank *t, List *bs, List *ms, List *xps, SoundEffects *sfx, Sprites *ss);
 void input_handle(Tank *t);
 void spawn_mob(List *ms);
 void collision_handle_tank(Tank *t, List *ms, SoundEffects *sfx);
@@ -31,12 +32,13 @@ int main() {
     List *xps;  // exp orbs
     float exp;
     SoundEffects *sfx;
-    initialize(&t, &bs, &ms, &xps, &exp, &sfx);
+    Sprites *ss;
+    initialize(&t, &bs, &ms, &xps, &exp, &sfx, &ss);
     while (!WindowShouldClose()) {
         update(t, bs, ms, xps, &exp, sfx);
-        draw(t, bs, ms, xps, exp);
+        draw(t, bs, ms, xps, exp, ss);
     }
-    terminate(t, bs, ms, xps, sfx);
+    terminate(t, bs, ms, xps, sfx, ss);
     return 0;
 }
 
@@ -44,7 +46,7 @@ int main() {
 #define MAX_BULLETS_INITIAL 5
 #define MAX_MOBS_INITIAL 5
 #define MAX_EXPS_INITIAL 5
-void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEffects **sfx) {
+void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEffects **sfx, Sprites **ss) {
     InitWindow(0, 0, "Tank Survival");
     ToggleFullscreen();
     util_init_constants(GetScreenWidth(), GetScreenHeight());
@@ -52,6 +54,7 @@ void initialize(Tank **t, List **bs, List **ms, List **xps, float *exp, SoundEff
     SetTargetFPS(FPS_TARGET);
     srand(time(NULL));
     *sfx = sound_effects_create();
+    *ss = sprites_create();
     *t = tank_create(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
     *bs = list_create(MAX_BULLETS_INITIAL);
     *ms = list_create(MAX_MOBS_INITIAL);
@@ -81,29 +84,31 @@ void update(Tank *t, List *bs, List *ms, List *xps, float *exp, SoundEffects *sf
     collision_handle_exporb(xps, t, exp, sfx);
 }
 
-void draw(Tank *t, List *bs, List *ms, List *xps, float exp) {
+void draw(Tank *t, List *bs, List *ms, List *xps, float exp, Sprites *ss) {
     BeginDrawing();
     ClearBackground(BACKGROUND_COLOR);
     for (int i = 0; i < list_len(xps); i++)
-        exporb_draw(list_get(xps, i));
+        exporb_draw(list_get(xps, i), ss);
     for (int i = 0; i < list_len(ms); i++)
-        mob_draw(list_get(ms, i));
+        mob_draw(list_get(ms, i), ss);
     for (int i = 0; i < list_len(bs); i++)
-        bullet_draw(list_get(bs, i));
-    tank_draw(t);
+        bullet_draw(list_get(bs, i), ss);
+    tank_draw(t, ss);
     draw_expbar(exp);
     draw_hurtscreen(tank_get_hp(t));
     if (tank_is_dead(t))
         draw_deathscreen();
+    DrawFPS(1, 0);
     EndDrawing();
 }
 
-void terminate(Tank *t, List *bs, List *ms, List *xps, SoundEffects *sfx) {
+void terminate(Tank *t, List *bs, List *ms, List *xps, SoundEffects *sfx, Sprites *ss) {
     tank_destroy(t);
     list_destroy(bs);
     list_destroy(ms);
     list_destroy(xps);
     sound_effects_destroy(sfx);
+    sprites_destroy(ss);
     CloseWindow();
 }
 
@@ -151,16 +156,16 @@ void spawn_mob(List *ms) {
         Vector2 pos = {rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT};
         switch (rand() % 4) {
             case 0:
-                pos.x = 0 - MOB_RADIUS;
+                pos.x = 0 - MOB_HITBOX_RADIUS;
                 break;
             case 1:
-                pos.x = SCREEN_WIDTH + MOB_RADIUS;
+                pos.x = SCREEN_WIDTH + MOB_HITBOX_RADIUS;
                 break;
             case 2:
-                pos.y = 0 - MOB_RADIUS;
+                pos.y = 0 - MOB_HITBOX_RADIUS;
                 break;
             case 3:
-                pos.y = SCREEN_HEIGHT + MOB_RADIUS;
+                pos.y = SCREEN_HEIGHT + MOB_HITBOX_RADIUS;
                 break;
         }
         Mob *m = mob_create(pos);
@@ -176,7 +181,7 @@ void spawn_mob(List *ms) {
 void collision_handle_tank(Tank *t, List *ms, SoundEffects *sfx) {
     for (int i = 0; i < list_len(ms); i++) {
         Mob *m = list_get(ms, i);
-        if (CheckCollisionCircles(tank_get_pos(t), TANK_HITBOX_RADIUS, mob_get_pos(m), MOB_RADIUS)) {
+        if (CheckCollisionCircles(tank_get_pos(t), TANK_HITBOX_RADIUS, mob_get_pos(m), MOB_HITBOX_RADIUS)) {
             int dmg = mob_attack(m);
             if (dmg != 0) {
                 PlaySound(sfx->hurt);
@@ -197,7 +202,7 @@ void collision_handle_bullet(List *bs, List *ms, List *xps, SoundEffects *sfx) {
         for (int y = 0; y < list_len(bs); y++) {
             Mob *m = list_get(ms, i);
             Bullet *b = list_get(bs, y);
-            if (CheckCollisionCircles(mob_get_pos(m), MOB_RADIUS, bullet_get_pos(b), BULLET_RADIUS)) {
+            if (CheckCollisionCircles(mob_get_pos(m), MOB_HITBOX_RADIUS, bullet_get_pos(b), BULLET_PIXELWIDTH * PIXEL_SIZE)) {
                 PlaySound(sfx->hit);
                 int dmg = bullet_get_damage(b);
                 mob_hp_reduce(m, dmg);
@@ -222,7 +227,7 @@ void collision_handle_bullet(List *bs, List *ms, List *xps, SoundEffects *sfx) {
 void collision_handle_exporb(List *xps, Tank *t, float *exp, SoundEffects *sfx) {
     for (int i = 0; i < list_len(xps); i++) {
         ExpOrb *xp = list_get(xps, i);
-        if (CheckCollisionCircles(exporb_get_pos(xp), EXPORB_RADIUS, tank_get_pos(t), TANK_TURRET_RADIUS)) {
+        if (CheckCollisionCircles(exporb_get_pos(xp), EXPORB_RADIUS, tank_get_pos(t), 1)) {
             PlaySound(sfx->exp);
             xp = list_delete(xps, i);
             (*exp) += exporb_get_points(xp);

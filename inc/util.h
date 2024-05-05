@@ -5,21 +5,19 @@
 #include <list.h>
 #include "tank.h"
 
+#define TANK_MAX_HP 20
+#define BULLET_DAMAGE 4
 #define BACKGROUND_COLOR RAYWHITE
 #define EXP_COLOR SKYBLUE
-#define TANK_MAX_HP 20
 
+extern float PIXEL_SIZE;
 extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;
-extern float TANK_HULL_WIDTH;
-extern float TANK_HULL_HEIGHT;
-extern float TANK_TRACK_WIDTH;
-extern float TANK_TURRET_RADIUS;
-extern float TANK_BARREL_WIDTH;
-extern float TANK_BARREL_MAX_LENGTH;
+extern float TANK_BASE_WIDTH;
+extern float TANK_BASE_HEIGHT;
 extern float TANK_HITBOX_RADIUS;
-extern float BULLET_RADIUS;
-extern float MOB_RADIUS;
+extern float MOB_HITBOX_RADIUS;
+
 extern float EXPORB_RADIUS;
 extern float EXPORB_PICKUPRANGE;
 extern float EXPBAR_WIDTH;

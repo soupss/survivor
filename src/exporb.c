@@ -30,8 +30,13 @@ void exporb_update(ExpOrb *xp, Vector2 target) {
         xp->pos = Vector2Add(xp->pos, Vector2Scale(dir, EXPORB_SPEED));
 }
 
-void exporb_draw(ExpOrb *xp) {
-    DrawCircleGradient(xp->pos.x, xp->pos.y, EXPORB_RADIUS, RAYWHITE, EXP_COLOR);
+void exporb_draw(ExpOrb *xp, Sprites *ss) {
+    // rotate ?
+    Vector2 size = {EXPORB_PIXELWIDTH * PIXEL_SIZE, EXPORB_PIXELHEIGHT * PIXEL_SIZE};
+    Rectangle rec_source = {0, 0, EXPORB_PIXELWIDTH, EXPORB_PIXELHEIGHT};
+    Rectangle rec_dest = {xp->pos.x, xp->pos.y, size.x, size.y};
+    Vector2 origin = {size.x / 2, size.y / 2};
+    DrawTexturePro(ss->exporb, rec_source, rec_dest, origin, 0, WHITE);
 }
 
 Vector2 exporb_get_pos(ExpOrb *xp) {

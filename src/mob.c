@@ -17,6 +17,7 @@ struct Mob {
     float mouth_size;
     int mouth_dir;
     bool can_attack;
+    bool has_attacked;
 };
 
 #define MOB_MAX_HP 15
@@ -31,15 +32,17 @@ Mob *mob_create(Vector2 pos) {
     m->mouth_dir = -1;
     m->status_knockback = NULL;
     m->can_attack = false;
+    m->has_attacked = false;
     return m;
 }
 
 void mob_destroy(Mob *m) {
-    //TODO: explosion
+    //TODO: death animation
     free(m);
 }
 
 #define MOB_MOUTH_SPEED 1
+#define MOB_MOUTH_SIZE_ATTACK_FACTOR 0.6
 void mob_update(Mob *m, Vector2 target, List *ms) {
     if (m->status_knockback != NULL)
         status_knockback_update(&m->status_knockback);
@@ -53,29 +56,34 @@ void mob_update(Mob *m, Vector2 target, List *ms) {
         if (m->mouth_size <= 0) {
             m->mouth_dir = 1;
             m->can_attack = false;
+            m->has_attacked = false;
         }
-        else if (m->mouth_size >= MOB_MOUTH_SIZE) {
+        else if (m->mouth_size >= MOB_MOUTH_SIZE)
             m->mouth_dir = -1;
+        if (m->mouth_dir == -1 && m->mouth_size <= MOB_MOUTH_SIZE * MOB_MOUTH_SIZE_ATTACK_FACTOR && m->has_attacked == false)
             m->can_attack = true;
-        }
+        else
+            m->can_attack = false;
     }
 }
 
-#define MOB_COLOR RED
-void mob_draw(Mob *m) {
-    float angle = -RAD2DEG * Vector2Angle(m->dir, (Vector2){1, 0});
-    DrawCircleV(m->pos, MOB_RADIUS, MOB_COLOR);
-    DrawCircleSector(m->pos, MOB_RADIUS, angle - m->mouth_size, angle + m->mouth_size, 365, BACKGROUND_COLOR);
+void mob_draw(Mob *m, Sprites *ss) {
+    Vector2 size = {SPIDER_PIXELWIDTH * PIXEL_SIZE, SPIDER_PIXELHEIGHT * PIXEL_SIZE};
+    Rectangle rec_source = {0, 0, SPIDER_PIXELWIDTH, SPIDER_PIXELHEIGHT};
+    Rectangle rec_dest = {m->pos.x, m->pos.y, size.x, size.y};
+    Vector2 origin = {size.x / 2, size.y / 2};
+    float rotation = -RAD2DEG * Vector2Angle(m->dir, (Vector2){0, 1});
+    DrawTexturePro(ss->spider, rec_source, rec_dest, origin, rotation, WHITE);
 }
 
 #define MOB_MOVE_SPEED 1.4
 void _mob_move(Mob *m, Vector2 target, List *ms) {
     //TODO: rotate instead of snap
-    Vector2 steer = util_separation_from_mobs_v(m->pos, MOB_RADIUS, ms, 0.5);
+    Vector2 steer = util_separation_from_mobs_v(m->pos, MOB_HITBOX_RADIUS, ms, 0.5);
     Vector2 d_vec = Vector2Subtract(target, m->pos);
     m->dir = Vector2Normalize(d_vec);
     float d = Vector2Length(d_vec);
-    if (d > MOB_RADIUS + TANK_HITBOX_RADIUS)
+    if (d > MOB_HITBOX_RADIUS + TANK_HITBOX_RADIUS)
         steer = Vector2Add(m->dir, steer);
     m->pos = Vector2Add(m->pos ,Vector2Scale(steer, MOB_MOVE_SPEED));
 }
@@ -83,7 +91,7 @@ void _mob_move(Mob *m, Vector2 target, List *ms) {
 #define MOB_ATTACK_DAMAGE 4
 int mob_attack(Mob *m) {
     if (m->can_attack) {
-        m->can_attack = false;
+        m->has_attacked = true;
         return MOB_ATTACK_DAMAGE;
     }
     else
