@@ -21,9 +21,9 @@ float EXPBAR_HEIGHT;
 void util_init_constants(int screen_width, int screen_height) {
     SCREEN_WIDTH = screen_width;
     SCREEN_HEIGHT = screen_height;
-    PIXEL_SIZE = screen_width / 400.0f;
-    TANK_BASE_WIDTH = 16 * PIXEL_SIZE;
-    TANK_BASE_HEIGHT = 16 * PIXEL_SIZE;
+    PIXEL_SIZE = screen_width / 500.0f;
+    TANK_BASE_WIDTH = TANK_BASE_PIXELWIDTH * PIXEL_SIZE;
+    TANK_BASE_HEIGHT = TANK_BASE_PIXELWIDTH * PIXEL_SIZE;
     TANK_HITBOX_RADIUS = TANK_BASE_WIDTH / 2;
     MOB_HITBOX_RADIUS = (SPIDER_PIXELHEIGHT * PIXEL_SIZE) / 2;
     EXPORB_RADIUS = EXPORB_PIXELWIDTH * PIXEL_SIZE;

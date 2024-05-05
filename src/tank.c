@@ -68,9 +68,9 @@ void tank_draw(Tank *t, Sprites *ss) {
     // Base: hull and tracks
     RenderTexture2D base_render = LoadRenderTexture(TANK_BASE_PIXELWIDTH, TANK_BASE_PIXELWIDTH);
     BeginTextureMode(base_render);
-        DrawTexture(ss->tank_track, 0, 0, WHITE);
-        DrawTexture(ss->tank_track, 12, 0, WHITE);
-        DrawTexture(ss->tank_hull, 3, 1, WHITE);
+        DrawTexture(ss->tank_track, 0, 1, WHITE);
+        DrawTexture(ss->tank_track, 13, 1, WHITE);
+        DrawTexture(ss->tank_hull, 5, 0, WHITE);
     EndTextureMode();
     Rectangle base_rec_source = {0, 0, base_render.texture.width, base_render.texture.height};
     Rectangle base_rec_dest = {t->rec.x, t->rec.y, TANK_BASE_WIDTH, TANK_BASE_HEIGHT};
@@ -81,7 +81,7 @@ void tank_draw(Tank *t, Sprites *ss) {
     RenderTexture2D top_render = LoadRenderTexture(TANK_TURRET_PIXELWIDTH, TANK_TURRET_PIXELHEIGHT + TANK_BARREL_PIXELHEIGHT);
     BeginTextureMode(top_render);
         DrawTexture(ss->tank_turret, 0, 0, WHITE);
-        DrawTexture(ss->tank_barrel, 3, 8, WHITE);
+        DrawTexture(ss->tank_barrel, 5, 15, WHITE);
     EndTextureMode();
     Rectangle top_rec_source = {0, 0, top_render.texture.width, top_render.texture.height};
     Vector2 top_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, 2 * PIXEL_SIZE));
@@ -208,8 +208,8 @@ void _tank_shoot(Tank *t, List *bs, SoundEffects *sfx) {
     static int shot_delta = 0;
     if (shot_delta >= TANK_SHOOT_DELAY) {
         PlaySound(sfx->shoot);
-        Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, 2 * PIXEL_SIZE));
-        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, TANK_BARREL_PIXELHEIGHT * PIXEL_SIZE - BULLET_PIXELWIDTH * PIXEL_SIZE));
+        Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, PIXEL_SIZE));
+        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, (TANK_TURRET_PIXELWIDTH / 2.0f + TANK_BARREL_PIXELHEIGHT) * PIXEL_SIZE - BULLET_PIXELWIDTH * PIXEL_SIZE));
         Bullet *b = bullet_create(barrel_end, t->turret_dir);
         list_insert(bs, b);
         shot_delta = 0;
