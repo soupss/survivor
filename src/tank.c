@@ -66,7 +66,7 @@ void tank_update(Tank *t, List *bs, List *ms, SoundEffects *sfx) {
 
 void tank_draw(Tank *t, Sprites *ss) {
     // Base: hull and tracks
-    RenderTexture2D base_render = LoadRenderTexture(TANK_BASE_PIXELWIDTH, TANK_BASE_PIXELWIDTH);
+    RenderTexture2D base_render = LoadRenderTexture(TANK_BASE_PIXELWIDTH, TANK_BASE_PIXELHEIGHT);
     BeginTextureMode(base_render);
         DrawTexture(ss->tank_track, 0, 1, WHITE);
         DrawTexture(ss->tank_track, 13, 1, WHITE);
@@ -204,13 +204,16 @@ void tank_turret_rotate(Tank *t, int dir) {
 #define TANK_SHOOT_RECOIL_DURATION_FACTOR 0.5
 #define TANK_SHOOT_RECOIL_DURATION_FACTOR2 0.5
 #define BULLET_DAMAGE_BASE 4
+#define BULLET_SPREAD (PI / 16.0f)
 void _tank_shoot(Tank *t, List *bs, SoundEffects *sfx) {
     static int shot_delta = 0;
     if (shot_delta >= TANK_SHOOT_DELAY) {
         PlaySound(sfx->shoot);
         Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, PIXEL_SIZE));
         Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, (TANK_TURRET_PIXELWIDTH / 2.0f + TANK_BARREL_PIXELHEIGHT) * PIXEL_SIZE - BULLET_PIXELWIDTH * PIXEL_SIZE));
-        Bullet *b = bullet_create(barrel_end, t->turret_dir);
+        float spread = ((float)rand() / RAND_MAX * BULLET_SPREAD) - BULLET_SPREAD / 2;
+        Vector2 dir = Vector2Rotate(t->turret_dir, spread);
+        Bullet *b = bullet_create(barrel_end, dir);
         list_insert(bs, b);
         shot_delta = 0;
         float r_kickback = TANK_SHOOT_RECOIL_KICKBACK_FACTOR * TANK_BARREL_PIXELHEIGHT * PIXEL_SIZE;

@@ -4,6 +4,10 @@
 
 # MAJOR
 
+* scaling mechanic
+    * more weapons on turret or tank lower speed
+    * ?long weapons lower acceleration
+    * ?heavy weapons lower max speed
 * mobs
     * mob theme / mob types
     * mob spawn system
@@ -29,6 +33,8 @@
 * tank customization
     * edit turret/hull
     * move/edit weapons
+* shoot mechanics
+    * inaccuracy
 
 ### misc
 
