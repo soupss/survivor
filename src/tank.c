@@ -5,6 +5,7 @@
 #include <raymath.h>
 #include "util.h"
 #include "status.h"
+#include "weapon.h"
 
 void _tank_shoot(Tank *t, List *bs, SoundEffects *sfx);
 void _tank_hp_regenerate(Tank *t);
@@ -12,6 +13,7 @@ void _tank_contain_in_map(Tank *t);
 
 struct Tank {
     Rectangle rec;
+    List *weapons;
     Vector2 velocity;
     Vector2 hull_dir;
     Vector2 turret_dir;
@@ -32,11 +34,18 @@ Tank *tank_create(int x, int y) {
     t->hurt_delta = 0;
     t->status_knockback = NULL;
     t->status_recoil = NULL;
+    t->weapons = list_create(8);
+    Weapon *machinegun = weapon_machinegun_create((Vector2){7, 15}, 0);
+    Weapon *gatling = weapon_gatling_create((Vector2){15, 8}, 270);
+    list_insert(t->weapons, machinegun);
+    list_insert(t->weapons, gatling);
     return t;
 }
 
 void tank_destroy(Tank *t) {
     //TODO: death animation
+    //TODO: free weapon state
+    list_destroy(t->weapons);
     free(t);
 }
 
@@ -78,19 +87,20 @@ void tank_draw(Tank *t, Sprites *ss) {
     float base_rotation = -RAD2DEG * Vector2Angle(t->hull_dir, (Vector2){0, -1});
     DrawTexturePro(base_render.texture, base_rec_source, base_rec_dest, base_origin, base_rotation, WHITE);
     // Top: Turret and barrel
-    RenderTexture2D top_render = LoadRenderTexture(TANK_TURRET_PIXELWIDTH, TANK_TURRET_PIXELHEIGHT + TANK_BARREL_PIXELHEIGHT);
+    RenderTexture2D top_render = LoadRenderTexture(TANK_TURRET_PIXELWIDTH + WEAPON_MACHINEGUN_PIXELHEIGHT, TANK_TURRET_PIXELHEIGHT + WEAPON_MACHINEGUN_PIXELHEIGHT);
     BeginTextureMode(top_render);
         DrawTexture(ss->tank_turret, 0, 0, WHITE);
-        DrawTexture(ss->tank_barrel, 5, 15, WHITE);
+        for (int i = 0; i < list_len(t->weapons); i++) {
+            Weapon *w = list_get(t->weapons, i);
+            w->draw(w, ss);
+        }
     EndTextureMode();
     Rectangle top_rec_source = {0, 0, top_render.texture.width, top_render.texture.height};
     Vector2 top_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, 2 * PIXEL_SIZE));
     Rectangle top_rec_dest = {top_pos.x, top_pos.y, top_render.texture.width * PIXEL_SIZE, top_render.texture.height * PIXEL_SIZE};
-    Vector2 top_origin = {(TANK_TURRET_PIXELWIDTH * PIXEL_SIZE) / 2, (TANK_BARREL_PIXELHEIGHT * PIXEL_SIZE) + (TANK_TURRET_PIXELHEIGHT * PIXEL_SIZE) / 2};
+    Vector2 top_origin = {(TANK_TURRET_PIXELWIDTH * PIXEL_SIZE) / 2, (WEAPON_MACHINEGUN_PIXELHEIGHT * PIXEL_SIZE) + (TANK_TURRET_PIXELHEIGHT * PIXEL_SIZE) / 2};
     float top_rotation = -RAD2DEG * Vector2Angle(t->turret_dir, (Vector2){0, -1});
     DrawTexturePro(top_render.texture, top_rec_source, top_rec_dest, top_origin, top_rotation, WHITE);
-    printf("top: %d, %d\n", top_render.texture.width, top_render.texture.height);
-    printf("base: %d, %d\n", base_render.texture.width, base_render.texture.height);
 }
 
 #define TANK_MOVE_ACC 0.03
@@ -210,13 +220,13 @@ void _tank_shoot(Tank *t, List *bs, SoundEffects *sfx) {
     if (shot_delta >= TANK_SHOOT_DELAY) {
         PlaySound(sfx->shoot);
         Vector2 turret_pos = Vector2Subtract((Vector2){t->rec.x, t->rec.y}, Vector2Scale(t->hull_dir, PIXEL_SIZE));
-        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, (TANK_TURRET_PIXELWIDTH / 2.0f + TANK_BARREL_PIXELHEIGHT) * PIXEL_SIZE - BULLET_PIXELWIDTH * PIXEL_SIZE));
+        Vector2 barrel_end = Vector2Add(turret_pos, Vector2Scale(t->turret_dir, (TANK_TURRET_PIXELWIDTH / 2.0f + WEAPON_MACHINEGUN_PIXELHEIGHT) * PIXEL_SIZE - BULLET_PIXELWIDTH * PIXEL_SIZE));
         float spread = ((float)rand() / RAND_MAX * BULLET_SPREAD) - BULLET_SPREAD / 2;
         Vector2 dir = Vector2Rotate(t->turret_dir, spread);
         Bullet *b = bullet_create(barrel_end, dir);
         list_insert(bs, b);
         shot_delta = 0;
-        float r_kickback = TANK_SHOOT_RECOIL_KICKBACK_FACTOR * TANK_BARREL_PIXELHEIGHT * PIXEL_SIZE;
+        float r_kickback = TANK_SHOOT_RECOIL_KICKBACK_FACTOR * WEAPON_MACHINEGUN_PIXELHEIGHT * PIXEL_SIZE;
         float dmg = bullet_get_damage(b);
         float r_duration = TANK_SHOOT_RECOIL_DURATION_FACTOR * TANK_SHOOT_DELAY + TANK_SHOOT_RECOIL_DURATION_FACTOR2 * dmg;
         t->status_recoil = status_recoil_create(r_kickback, r_duration);

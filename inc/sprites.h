@@ -11,20 +11,25 @@
 #define TANK_HULL_PIXELHEIGHT 20
 #define TANK_TURRET_PIXELWIDTH 15
 #define TANK_TURRET_PIXELHEIGHT 15
-#define TANK_BARREL_PIXELWIDTH 5
-#define TANK_BARREL_PIXELHEIGHT 12
+
+#define WEAPON_MACHINEGUN_PIXELWIDTH 5
+#define WEAPON_MACHINEGUN_PIXELHEIGHT 10
+#define WEAPON_GATLING_PIXELWIDTH 9
+#define WEAPON_GATLING_PIXELHEIGHT 10
 #define BULLET_PIXELWIDTH 4
 #define BULLET_PIXELHEIGHT 4
-#define EXPORB_PIXELHEIGHT 8
-#define EXPORB_PIXELWIDTH 8
+
 #define SPIDER_PIXELWIDTH 27
 #define SPIDER_PIXELHEIGHT 20
+#define EXPORB_PIXELHEIGHT 8
+#define EXPORB_PIXELWIDTH 8
 
 typedef struct {
     Texture2D tank_track;
     Texture2D tank_hull;
     Texture2D tank_turret;
-    Texture2D tank_barrel;
+    Texture2D weapon_machinegun;
+    Texture2D weapon_gatling;
     Texture2D bullet;
     Texture2D exporb;
     Texture2D spider;
