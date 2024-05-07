@@ -1,53 +1,46 @@
 # sprites
 
-* mob attack
+* Mobs
+    1. mob theme / mob types
+    2. mob spawn system
+    3. elite mobs
+* Tank
+    1. turret with weapon slots
+        * each turret has corresponding weapon positions and rotations
+    2. tank with weapon slots
+    3. animate
+        * tank tracks
+        * recoil
+        * death animation
+* Floors
+    1. create a floor with mobs
+    2. camera
+    3. minimap
+* Level up
+    1. display upgrades
+    2. equip upgrades
 
-# MAJOR
-
-* scaling mechanic
-    * more weapons on turret or tank lower speed
-    * ?long weapons lower acceleration
-    * ?heavy weapons lower max speed
-* mobs
-    * mob theme / mob types
-    * mob spawn system
-* tank
-    * turret with weapon slots
-    * tank with weapon slots
-* floors
-    * create a floor with mobs
-    * camera
-    * minimap
-* level up
-    * display upgrades
-    * equip upgrades
-
-## minor
-
-* animations
-    * tank tracks
-    * recoil
-    * death animation (mob + tank)
-* elite mobs
-    * drop upgrade
-* tank customization
-    * edit turret/hull
-    * move/edit weapons
-* shoot mechanics
-    * inaccuracy
-
-### misc
-
-* weapon types
-    * barrel weapons
-        * piercing sniper
-        * grenade launcher
-        * close range shotgun
+* Weapon types
+    * guns
         * flamethrower
-    * auto-aim variants
+        * bazooka
+        * grenade launcher
+        * lazer beam
+        * cannon
+    * gadgets
+        * mines
+        * oil spill
+        * air blower
+        * toxic gas trail
+    * melee
+        * spikes
+        * buzzsaw/chainsaw
+    * defensive
+        * rechargeable plasma shield
+        * anti projectile field
+        * hull armor
+    * active items
+        * rocket
+        * teleporter
     * drones
-    * mines
-    * spikes
-    * oil spill
-* mob types
-    * ...
+    * auto aim weapons

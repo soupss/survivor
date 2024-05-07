@@ -21,8 +21,8 @@
 
 #define SPIDER_PIXELWIDTH 27
 #define SPIDER_PIXELHEIGHT 20
-#define EXPORB_PIXELHEIGHT 8
 #define EXPORB_PIXELWIDTH 8
+#define EXPORB_PIXELHEIGHT 8
 
 typedef struct {
     Texture2D tank_track;

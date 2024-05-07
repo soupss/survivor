@@ -31,7 +31,7 @@ void exporb_update(ExpOrb *xp, Vector2 target) {
 }
 
 void exporb_draw(ExpOrb *xp, Sprites *ss) {
-    // rotate ?
+    //TODO:rotate
     Vector2 size = {EXPORB_PIXELWIDTH * PIXEL_SIZE, EXPORB_PIXELHEIGHT * PIXEL_SIZE};
     Rectangle rec_source = {0, 0, EXPORB_PIXELWIDTH, EXPORB_PIXELHEIGHT};
     Rectangle rec_dest = {xp->pos.x, xp->pos.y, size.x, size.y};

@@ -3,10 +3,11 @@
 
 #include "sound_effects.h"
 #include "sprites.h"
+#include "list.h"
 
 typedef struct Weapon Weapon;
 struct Weapon {
-    void (*use)(Weapon *w, SoundEffects *sfx);
+    void (*use)(Weapon *w, List *bs, Vector2 turret_pos, float turret_rotation, SoundEffects *sfx);
     void (*draw)(Weapon *w, Sprites *ss);
     void *state;
 };

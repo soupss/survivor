@@ -36,7 +36,7 @@ void bullet_draw(Bullet *b, Sprites *ss) {
     Rectangle rec_source = {0, 0, BULLET_PIXELWIDTH, BULLET_PIXELHEIGHT};
     Rectangle rec_dest = {b->pos.x, b->pos.y, size.x, size.y};
     Vector2 origin = {size.x / 2, size.y / 2};
-    float rotation = -RAD2DEG * Vector2Angle(b->dir, (Vector2){0, -1});
+    float rotation = -RAD2DEG * Vector2Angle(b->dir, (Vector2){0, 1});
     DrawTexturePro(ss->bullet, rec_source, rec_dest, origin, rotation, WHITE);
 }
 
